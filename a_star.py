@@ -4,6 +4,7 @@ import heapq
 # import math
 import csv
 
+nodes_file = "nodes.csv"
 def astar(adj_list, source, destination, num_iterations):
     def euclidean_distance(node1, node2):
         # euclidean heuristic
@@ -15,7 +16,7 @@ def astar(adj_list, source, destination, num_iterations):
 
     # read node coordinates from nodes.csv
     node_coordinates = {}
-    with open(r'C:\Users\ADMIN\Desktop\dsa-pathfinding-project-3-main\nodes.csv', newline='') as csvfile:
+    with open(nodes_file, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             node_id = int(row['node_id'])

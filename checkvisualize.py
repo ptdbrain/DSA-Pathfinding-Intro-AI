@@ -7,8 +7,10 @@ import numpy as np
 from matplotlib.widgets import Button
 
 # Load data
-nodes_file = r"C:\Users\ADMIN\Desktop\dsa-pathfinding-project-3-main\nodes.csv"  # Đường dẫn đến file nodes.csv của bạn
-edges_file = r"C:\Users\ADMIN\Desktop\dsa-pathfinding-project-3-main\adj_list_with_weights.csv"  # Đường dẫn đến file adj_list_with_weights.csv của bạn
+# nodes_file = r"C:\Users\Admin\Desktop\Workspace\CLONEGIT\ai\Project_AI_20242\nodes.csv"  # Đường dẫn đến file nodes.csv của bạn
+# edges_file = r"C:\Users\Admin\Desktop\Workspace\CLONEGIT\ai\Project_AI_20242\adj_list_with_weights.csv"  # Đường dẫn đến file adj_list_with_weights.csv của bạn
+nodes_file = "nodes.csv"
+edges_file = "adj_list_with_weights.csv"
 
 # Đọc và hiển thị thông tin về dữ liệu node
 print("Đang đọc dữ liệu từ file nodes.csv...")
