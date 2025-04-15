@@ -1,20 +1,10 @@
-# MaxieLife
-
 import heapq
-# import math
 import csv
 
 nodes_file = "nodes.csv"
-def astar(adj_list, source, destination, num_iterations):
-    def euclidean_distance(node1, node2):
-        # euclidean heuristic
-        x1, y1 = node1
-        x2, y2 = node2
-        return (x1 - x2) ** 2 + (y1 - y2) ** 2
-               # omitted sqrt to save on time and space complexity since we dont need an actual distance
-               # math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
-    # read node coordinates from nodes.csv
+def astar(adj_list, source, destination, num_iterations):
+    # Đọc tọa độ của các node từ file nodes.csv
     node_coordinates = {}
     with open(nodes_file, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
@@ -23,60 +13,74 @@ def astar(adj_list, source, destination, num_iterations):
             x, y = float(row['x']), float(row['y'])
             node_coordinates[node_id] = (x, y)
 
-    # priority queue for open list
+    def euclidean_distance(node1, node2):
+        # Hàm heuristic: khoảng cách Euclidean (bỏ căn bậc hai để tối ưu)
+        x1, y1 = node_coordinates[node1]
+        x2, y2 = node_coordinates[node2]
+        return (x1 - x2) ** 2 + (y1 - y2) ** 2
+
+    # Danh sách mở (open list) - lưu các node cần xem xét
     open_list = []
-
-    # set to store explored nodes
-    explored_nodes = set()
-
-    # dictionary to store parent info
+    
+    # Tập hợp đóng (closed set) - lưu các node đã xét
+    closed_set = set()
+    
+    # Dictionary lưu thông tin node cha
     parent = {}
-
-    # dictionary to store g-values
+    
+    # Dictionary lưu g-value: chi phí từ điểm đầu đến node
     g_values = {node: float('inf') for node in adj_list}
-
-    # initialize starting node
     g_values[source] = 0
-    f_value = g_values[source] + euclidean_distance(node_coordinates[source], node_coordinates[destination])
-
-    # add starting node to open list
-    heapq.heappush(open_list, (f_value, source))
-
+    
+    # Dictionary lưu f-value: tổng g-value và heuristic
+    f_values = {node: float('inf') for node in adj_list}
+    f_values[source] = g_values[source] + euclidean_distance(source, destination)
+    
+    # Thêm node bắt đầu vào open list
+    heapq.heappush(open_list, (f_values[source], source))
+    
     iterations = 0
-
+    
     while open_list and iterations < num_iterations * 150:
         iterations += 1
-
-        # pop node with the smallest f-value from open list
+        
+        # Lấy node có f-value nhỏ nhất từ open list
         current_f, current_node = heapq.heappop(open_list)
-
-        # mark the current node as explored
-        explored_nodes.add(current_node)
-
-        # if destination is reached, reconstruct and return path
+        
+        # Nếu đến đích, tạo đường đi và trả về
         if current_node == destination:
             path = [destination]
-            while destination in parent:
-                destination = parent[destination]
-                path.append(destination)
-            return path[::-1]
-
-        # explore neighbors of the current node
+            node = destination
+            while node in parent:
+                node = parent[node]
+                path.append(node)
+            return path[::-1]  # Đảo ngược đường đi để có thứ tự từ nguồn đến đích
+        
+        # Nếu node đã xét, bỏ qua
+        if current_node in closed_set:
+            continue
+        
+        # Thêm node hiện tại vào closed set
+        closed_set.add(current_node)
+        
+        # Duyệt qua tất cả các node kề
         for neighbor, weight in adj_list[current_node].items():
-            # calculate tentative g-value
-            tentative_g = g_values[current_node] + euclidean_distance(node_coordinates[neighbor], node_coordinates[destination])
-
-            # if the tentative g-value is better, update the information
+            # Nếu node kề đã xét, bỏ qua
+            if neighbor in closed_set:
+                continue
+                
+            # Tính g-value mới: chi phí từ nguồn đến neighbor thông qua current_node
+            tentative_g = g_values[current_node] + weight  # Sử dụng weight từ adj_list
+            
+            # Kiểm tra xem đường đi mới có tốt hơn không
             if tentative_g < g_values[neighbor]:
-                g_values[neighbor] = tentative_g
-                f_value = tentative_g + euclidean_distance(node_coordinates[neighbor], node_coordinates[destination])
-
-                # add to open list if not already there
-                if neighbor not in explored_nodes:
-                    heapq.heappush(open_list, (f_value, neighbor))
-
-                # update parent information
+                # Cập nhật thông tin
                 parent[neighbor] = current_node
-
-    # return list of explored nodes after N number of iterations (if path was not found)
-    return list(explored_nodes)
+                g_values[neighbor] = tentative_g
+                f_values[neighbor] = g_values[neighbor] + euclidean_distance(neighbor, destination)
+                
+                # Thêm vào open list để xét sau
+                heapq.heappush(open_list, (f_values[neighbor], neighbor))
+    
+    # Nếu không tìm được đường đi sau số lần lặp quy định, trả về danh sách các node đã xét
+    return list(closed_set)
