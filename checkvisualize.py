@@ -7,8 +7,6 @@ import numpy as np
 from matplotlib.widgets import Button
 
 # Load data
-# nodes_file = r"C:\Users\Admin\Desktop\Workspace\CLONEGIT\ai\Project_AI_20242\nodes.csv"  # Đường dẫn đến file nodes.csv của bạn
-# edges_file = r"C:\Users\Admin\Desktop\Workspace\CLONEGIT\ai\Project_AI_20242\adj_list_with_weights.csv"  # Đường dẫn đến file adj_list_with_weights.csv của bạn
 nodes_file = "nodes.csv"
 edges_file = "adj_list_with_weights.csv"
 
@@ -25,6 +23,9 @@ required_columns = ['node_id', 'x', 'y']
 for col in required_columns:
     if col not in nodes_df.columns:
         raise ValueError(f"Thiếu cột {col} trong file nodes.csv")
+
+# Kiểm tra xem cột 'added' có tồn tại không
+has_added_column = 'added' in nodes_df.columns
 
 # Load node positions từ file nodes.csv
 positions = {}
@@ -111,6 +112,7 @@ print(f"Tổng số node hợp nhất: {len(all_nodes)}")
 # Đảm bảo tất cả các node đều có tọa độ
 # Nếu một node có trong adj_dict nhưng không có trong positions,
 # gán cho nó một tọa độ ngẫu nhiên trong phạm vi hiện có
+nodes_with_generated_positions = set()
 if len(nodes_in_adj - nodes_in_positions) > 0:
     print("Đang tạo tọa độ cho các node thiếu...")
     x_min, x_max = min(x_values), max(x_values)
@@ -121,14 +123,17 @@ if len(nodes_in_adj - nodes_in_positions) > 0:
         x = np.random.uniform(x_min, x_max)
         y = np.random.uniform(y_min, y_max)
         positions[node] = (x, y)
+        nodes_with_generated_positions.add(node)
     
     print(f"Đã tạo tọa độ cho {len(nodes_in_adj - nodes_in_positions)} node thiếu")
 
 # Đảm bảo tất cả các node đều có trong adj_dict
 # Nếu một node có trong positions nhưng không có trong adj_dict,
 # thêm nó vào adj_dict với danh sách kề rỗng
+nodes_without_connections = set()
 for node in nodes_in_positions - nodes_in_adj:
     adj_dict[node] = {}
+    nodes_without_connections.add(node)
 
 # Import A* algorithm nếu có
 try:
@@ -148,6 +153,10 @@ lines = []
 selected_nodes = []
 iterations = 200
 
+final_path_drawn = False  # Cờ để chỉ vẽ đường đi một lần
+final_path_nodes = []
+final_path_lines = []  # Thêm biến để theo dõi đường đi cuối cùng
+
 # Create the main figure
 fig, ax = plt.subplots(figsize=(12, 10))
 plt.subplots_adjust(bottom=0.15)  # Make space for buttons
@@ -158,13 +167,29 @@ plt.axis('off')
 # Plot all nodes
 node_points = []
 for node_id, (x, y) in positions.items():
-    added_value = int(nodes_df.loc[nodes_df['node_id'] == node_id, 'added'].values[0])
-    color = (
-        'red' if added_value == 1 else
-        'blue'
-    )
+    # Xác định màu sắc dựa vào loại node
+    if node_id in nodes_with_generated_positions:
+        color = 'purple'  # Node được thêm tọa độ
+    elif node_id in nodes_without_connections:
+        color = 'orange'  # Node không có kết nối
+    else:
+        # Kiểm tra cột 'added' nếu có
+        if has_added_column:
+            try:
+                # Tìm hàng chứa node_id
+                node_row = nodes_df[nodes_df['node_id'] == node_id]
+                if not node_row.empty:
+                    added_value = int(node_row['added'].values[0])
+                    color = 'red' if added_value == 1 else 'blue'
+                else:
+                    color = 'blue'  # Mặc định nếu không tìm thấy node
+            except Exception as e:
+                print(f"Lỗi khi xác định màu cho node {node_id}: {e}")
+                color = 'blue'  # Mặc định nếu có lỗi
+        else:
+            color = 'blue'  # Mặc định nếu không có cột 'added'
+            
     ax.plot(x, y, 'o', color=color, markersize=8, alpha=0.7)
-
 
 # Plot base graph (all edges in light gray)
 edge_count = 0
@@ -180,9 +205,10 @@ print(f"Đã vẽ {edge_count} cạnh trên đồ thị")
 
 # Thêm chú thích
 legend_elements = [
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Node thông thường'),
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=10, label='Node không có kết nối'),
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='purple', markersize=10, label='Node được thêm tọa độ')
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=5, label='Node thông thường'),
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=5, label='Node đã thêm (added=1)'),
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=5, label='Node không có kết nối'),
+    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='purple', markersize=5, label='Node được thêm tọa độ')
 ]
 ax.legend(handles=legend_elements, loc='upper right')
 
@@ -226,7 +252,7 @@ def on_click(event):
 
 # Function to reset selection
 def reset_selection(event):
-    global selected_points, selected_nodes, animation_running, ani, all_edges, lines
+    global selected_points, selected_nodes, animation_running, ani, all_edges, lines, final_path_drawn, final_path_lines
     
     # Stop animation if running
     if animation_running and ani is not None:
@@ -243,7 +269,15 @@ def reset_selection(event):
         if ln in ax.lines:
             ln.remove()
     lines = []
+    
+    # Clear final path lines
+    for ln in final_path_lines:
+        if ln in ax.lines:
+            ln.remove()
+    final_path_lines = []
+    
     all_edges = []
+    final_path_drawn = False  # Reset the flag
     
     # Reset title
     plt.title(f"Visualization ({len(positions)} nodes) - Click to select start and end points")
@@ -252,13 +286,22 @@ def reset_selection(event):
 
 # Function to run A* animation
 def run_animation(event):
-    global animation_running, ani, all_edges, selected_nodes, iterations
+    global animation_running, ani, all_edges, selected_nodes, iterations, final_path_drawn, final_path_lines
     
-    if len(selected_nodes) != 2 or animation_running or not a_star_available:
-        if not a_star_available:
-            plt.title("A* module không khả dụng - Không thể chạy tìm đường")
-            plt.draw()
+    if len(selected_nodes) != 2 or animation_running:
         return
+        
+    if not a_star_available:
+        plt.title("A* module không khả dụng - Không thể chạy tìm đường")
+        plt.draw()
+        return
+    
+    # Clear any previous final path
+    for ln in final_path_lines:
+        if ln in ax.lines:
+            ln.remove()
+    final_path_lines = []
+    final_path_drawn = False
     
     animation_running = True
     source = selected_nodes[0]
@@ -280,34 +323,33 @@ def run_animation(event):
                     edge_set.append((node, neighbor))
             all_edges.append(edge_set)
         
-        # Create animation
+        # First draw the final path
+        draw_final_path()
+        final_path_drawn = True
+        
+        # Then create animation
         ani = animation.FuncAnimation(fig, update_frame, frames=len(all_edges), interval=80)
     except Exception as e:
         plt.title(f"Lỗi khi chạy A*: {str(e)}")
         animation_running = False
     
     plt.draw()
-
 # Function to update each frame
-final_path_drawn = False  # Cờ để chỉ vẽ đường đi một lần
-final_path_nodes = []
-
 def update_frame(frame):
-    global lines, final_path_drawn
+    global lines
 
+    # Clear previous animation frames
     for ln in lines:
         if ln in ax.lines:
             ln.remove()
     lines = []
 
+    # Check if animation is at the end
     if frame >= len(all_edges):
-        if not final_path_drawn:
-            draw_final_path()
-            final_path_drawn = True
         return
 
+    # Draw current frame's edges
     edges = all_edges[frame]
-
     if not edges or len(selected_nodes) < 2:
         return
 
@@ -354,34 +396,57 @@ def save_animation(event):
     plt.draw()
 
 def draw_final_path():
-    global selected_nodes, final_path_nodes
+    global selected_nodes, final_path_nodes, final_path_lines
 
     if not a_star_available or len(selected_nodes) != 2:
+        print("⚠️ Cannot draw path: A* module unavailable or invalid selection.")
         return
 
     try:
-        # Gọi thuật toán A* với số lượng lặp lớn để đảm bảo tìm ra đường đi ngắn nhất
+        # Run A* with sufficient iterations to find the shortest path
         final_path_nodes = astar(adj_dict, selected_nodes[0], selected_nodes[1], 1000)
 
         if isinstance(final_path_nodes, list) and len(final_path_nodes) > 1:
-            print("\n✅ Đường đi ngắn nhất đã tìm được:")
+            # Print movement steps to console
+            print("\n🚀 Shortest Path Found:")
+            print(f"From Node {selected_nodes[0]} to Node {selected_nodes[1]}")
+            print("Steps:")
+            
+            total_weight = 0
+            for i, node in enumerate(final_path_nodes):
+                print(f"  {i+1}. Node {node}")
+                if i < len(final_path_nodes) - 1:
+                    next_node = final_path_nodes[i+1]
+                    weight = adj_dict.get(node, {}).get(next_node, 0)
+                    total_weight += weight
+                    print(f"     → Move to Node {next_node} (Weight: {weight:.2f})")
+
+            print(f"\nTotal path weight: {total_weight:.2f}")
+
+            # Draw the path on the plot
             for i in range(len(final_path_nodes) - 1):
                 u = final_path_nodes[i]
                 v = final_path_nodes[i + 1]
                 if u in positions and v in positions:
                     x0, y0 = positions[u]
                     x1, y1 = positions[v]
-                    ax.plot([x0, x1], [y0, y1], color='darkorange', linewidth=4, linestyle='--')
-                    print(f" - Từ node {u} đến node {v}")
-            plt.title(f"✅ Đường đi ngắn nhất từ {selected_nodes[0]} đến {selected_nodes[1]} đã được hiển thị")
+                    # Use a bright, thick line for visibility
+                    ln, = ax.plot([x0, x1], [y0, y1], color='limegreen', linewidth=5, linestyle='-', 
+                            alpha=0.9, zorder=10)
+                    final_path_lines.append(ln)  # Track the line
+                    
+            plt.title(f"✅ Shortest Path from Node {selected_nodes[0]} to Node {selected_nodes[1]} - Total Weight: {total_weight:.2f}")
         else:
-            print("⚠️ Không tìm được đường đi ngắn nhất.")
-            plt.title("⚠️ Không tìm được đường đi ngắn nhất.")
+            print("⚠️ No valid path found.")
+            plt.title("⚠️ No valid path found between selected nodes.")
 
         plt.draw()
 
     except Exception as e:
-        print(f"❌ Lỗi khi tìm đường: {e}")
+        print(f"❌ Error finding path: {e}")
+        plt.title(f"❌ Error: {str(e)}")
+        plt.draw()
+
 # Connect the click event
 fig.canvas.mpl_connect('button_press_event', on_click)
 
