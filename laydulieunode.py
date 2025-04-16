@@ -80,6 +80,7 @@ def interpolate_graph_edges(G, dist=50):
         num_points = int(length / dist)
         if num_points <= 1:
             continue
+        
 
         distances = [i * dist for i in range(num_points + 1)]
         points = [line.interpolate(distance) for distance in distances]
