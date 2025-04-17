@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bản đồ với Node</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Thư viện Leaflet -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<!-- Dữ liệu node đã được export từ Python -->
+<script src="nodes.js"></script>
+
+<script>
+  // Khởi tạo bản đồ tại vị trí trung tâm (có thể tùy chỉnh toạ độ)
+  const map = L.map('map').setView([21.0403, 105.8476], 17);
+
+  // Sử dụng tile sáng dễ nhìn
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(map);
+
+  // Duyệt qua danh sách node và vẽ chấm tròn
+  nodes.forEach(node => {
+    L.circleMarker([node.lat, node.lon], {
+      radius: 3,
+      color: 'blue',
+      fillColor: 'blue',
+      fillOpacity: 0.9
+    }).addTo(map)
+    .bindTooltip(`Node ${node.node_id}`);
+  });
+
+  // Hàm tính khoảng cách giữa 2 điểm (đơn vị: mét)
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Bán kính Trái đất (m)
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Khoảng cách (m)
+    return d;
+  }
+  let selectedPoints = [];
+  // Xử lý sự kiện click trên bản đồ
+  map.on('click', function(e) {
+    // Nếu đã chọn đủ 2 điểm thì không làm gì cả
+    if (selectedPoints.length >= 2) return;
+
+    // Lấy toạ độ click
+    const clickedLat = e.latlng.lat;
+    const clickedLon = e.latlng.lng;
+
+    // Tìm node gần nhất chưa được chọn
+    let closestNode = null;
+    let minDistance = Infinity;
+
+    nodes.forEach(node => {
+        if (selectedPoints.includes(node.node_id)) return; // bỏ qua nếu đã chọn
+
+        const distance = getDistance(clickedLat, clickedLon, node.lat, node.lon);
+        if (distance < minDistance) {
+        minDistance = distance;
+        closestNode = node;
+        }
+    });
+
+    // Nếu còn node để chọn
+    if (closestNode) {
+        // Vẽ node màu đỏ
+        L.circleMarker([closestNode.lat, closestNode.lon], {
+        radius: 3,
+        color: 'red',
+        fillColor: 'red',
+        fillOpacity: 1
+        }).addTo(map);   
+
+        // Thêm node vào danh sách
+        selectedPoints.push(closestNode.node_id);
+
+        // Nếu đã đủ 2 điểm
+        if (selectedPoints.length === 2) {
+              setTimeout(() => {
+                alert("Đã chọn đủ 2 điểm. Gửi yêu cầu đến backend.");
+
+                // Gửi request POST
+                fetch("http://127.0.0.1:5000/find_path", {
+                  method: "POST",
+                  headers: {
+                  "Content-Type": "application/json"
+                },
+                
+                body: JSON.stringify({
+                start: selectedPoints[0],
+                end: selectedPoints[1]
+                })
+                })
+                  .then(res => res.json())
+                  .then(data => {
+                  console.log("Kết quả từ backend:", data);
+                // Bạn có thể dùng dữ liệu để vẽ đường ở đây
+                })
+                  .catch(err => console.error("Lỗi khi gọi API:", err));
+
+              }, 10); // Delay nhẹ để marker đỏ render xong
+          }
+
+
+    }
+});
+
+
+</script>
+
+</body>
+</html>
