@@ -2,7 +2,6 @@ import heapq
 import csv
 
 nodes_file = "nodes.csv"
-
 def astar(adj_list, source, destination, num_iterations):
     # Đọc tọa độ của các node từ file nodes.csv
     node_coordinates = {}
@@ -21,11 +20,11 @@ def astar(adj_list, source, destination, num_iterations):
 
     # Danh sách mở (open list) - lưu các node cần xem xét
     open_list = []
-    
-    # Tập hợp đóng (closed set) - lưu các node đã xét
-    closed_set = set()
-    
-    # Dictionary lưu thông tin node cha
+
+    # set to store explored nodes
+    explored_nodes = set()
+
+    # dictionary to store parent info
     parent = {}
     
     # Dictionary lưu g-value: chi phí từ điểm đầu đến node
@@ -46,24 +45,19 @@ def astar(adj_list, source, destination, num_iterations):
         
         # Lấy node có f-value nhỏ nhất từ open list
         current_f, current_node = heapq.heappop(open_list)
-        
-        # Nếu đến đích, tạo đường đi và trả về
+
+        # mark the current node as explored
+        explored_nodes.add(current_node)
+
+        # if destination is reached, reconstruct and return path
         if current_node == destination:
             path = [destination]
-            node = destination
-            while node in parent:
-                node = parent[node]
-                path.append(node)
-            return path[::-1]  # Đảo ngược đường đi để có thứ tự từ nguồn đến đích
-        
-        # Nếu node đã xét, bỏ qua
-        if current_node in closed_set:
-            continue
-        
-        # Thêm node hiện tại vào closed set
-        closed_set.add(current_node)
-        
-        # Duyệt qua tất cả các node kề
+            while destination in parent:
+                destination = parent[destination]
+                path.append(destination)
+            return path[::-1]
+
+        # explore neighbors of the current node
         for neighbor, weight in adj_list[current_node].items():
             # Nếu node kề đã xét, bỏ qua
             if neighbor in closed_set:
