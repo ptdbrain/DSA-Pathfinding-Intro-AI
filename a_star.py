@@ -4,7 +4,7 @@ import heapq
 # import math
 import csv
 
-nodes_file = "nodes.csv"
+nodes_file = "data/nodes.csv"
 def astar(adj_list, source, destination, num_iterations):
     def euclidean_distance(node1, node2):
         # euclidean heuristic
@@ -28,7 +28,7 @@ def astar(adj_list, source, destination, num_iterations):
 
     # set to store explored nodes
     explored_nodes = set()
-
+    list_explored_nodes = []
     # dictionary to store parent info
     parent = {}
 
@@ -51,15 +51,15 @@ def astar(adj_list, source, destination, num_iterations):
         current_f, current_node = heapq.heappop(open_list)
 
         # mark the current node as explored
-        explored_nodes.add(current_node)
-
+        list_explored_nodes.append(current_node)
+        explored_nodes = set(list_explored_nodes)
         # if destination is reached, reconstruct and return path
         if current_node == destination:
             path = [destination]
             while destination in parent:
                 destination = parent[destination]
                 path.append(destination)
-            return path[::-1]
+            return path[::-1] , list_explored_nodes
 
         # explore neighbors of the current node
         for neighbor, weight in adj_list[current_node].items():

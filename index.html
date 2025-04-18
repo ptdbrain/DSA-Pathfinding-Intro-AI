@@ -31,11 +31,10 @@
   const map = L.map('map').setView([21.0403, 105.8476], 17);
 
   // Sử dụng tile sáng dễ nhìn
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);  
 
   // Duyệt qua danh sách node và vẽ chấm tròn
   nodes.forEach(node => {
@@ -65,6 +64,45 @@
   }
   let selectedPoints = [];
   // Xử lý sự kiện click trên bản đồ
+  function highlightExploredNodes(exploredNodes, callback) {
+        let index = 0;
+
+        const interval = setInterval(() => {
+          if (index >= exploredNodes.length) {
+            clearInterval(interval); // Dừng khi đã tô hết node
+            if (callback) callback(); // Gọi callback nếu có
+            return;
+          }
+
+          const nodeId = exploredNodes[index];
+          const node = nodes.find(n => n.node_id === nodeId);
+
+          if (node) {
+            L.circleMarker([node.lat, node.lon], {
+              radius: 4,
+              color: 'purple',
+              fillColor: 'purple',
+              fillOpacity: 1
+            }).addTo(map);
+          }
+
+          index++;
+        }, 100); // Mỗi node được tô sau 100ms
+      }
+      function drawPath(path) {
+        // Tạo mảng chứa các điểm (lat, lon) của path
+          const pathCoords = path.map(nodeId => {
+          const node = nodes.find(n => n.node_id === nodeId);
+          return [node.lat, node.lon];
+        });
+
+        // Vẽ đường nối các điểm
+        L.polyline(pathCoords, {
+          color: 'green', // Màu của đường
+          weight: 4, // Độ dày đường
+          opacity: 0.7, // Độ mờ của đường
+        }).addTo(map);
+      }
   map.on('click', function(e) {
     // Nếu đã chọn đủ 2 điểm thì không làm gì cả
     if (selectedPoints.length >= 2) return;
@@ -118,9 +156,12 @@
                 })
                 })
                   .then(res => res.json())
-                  .then(data => {
+                  .then( data => {
                   console.log("Kết quả từ backend:", data);
                 // Bạn có thể dùng dữ liệu để vẽ đường ở đây
+                highlightExploredNodes(data.explored_nodes , () => {
+                  drawPath(data.path); // Vẽ đường đi
+                }); // Tô màu các node đã được khám phá
                 })
                   .catch(err => console.error("Lỗi khi gọi API:", err));
 
