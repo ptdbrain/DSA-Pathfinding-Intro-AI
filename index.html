@@ -2,178 +2,232 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bản đồ với Node</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { height: 100vh; width: 100%; }
+    .top-center {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      z-index: 1000;
     }
-    #map {
-      height: 100vh;
-      width: 100%;
+
+    .toggle-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .admin {
+      background-color: #f44336;
+    }
+
+    .guest {
+      background-color: #4CAF50;
     }
   </style>
 </head>
 <body>
-
+  <div class="top-center">
+    <button id="toggleBtn" class="toggle-btn guest" data-role="guest">Guest</button>
+  </div>
 <div id="map"></div>
 
-<!-- Thư viện Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<!-- Dữ liệu node đã được export từ Python -->
 <script src="data/nodes.js"></script>
 
 <script>
-  // Khởi tạo bản đồ tại vị trí trung tâm (có thể tùy chỉnh toạ độ)
-  const map = L.map('map').setView([21.0403, 105.8476], 17);
+    //guess admin button
+    let isBlockMode = false;
+    const btn = document.getElementById("toggleBtn");
+    function handleRoleToggle() {
+        const isAdmin = btn.dataset.role === "guest";
+        btn.dataset.role = isAdmin ? "admin" : "guest";
+        btn.textContent = isAdmin ? "Admin" : "Guest";
+        btn.classList.toggle("admin", isAdmin);
+        btn.classList.toggle("guest", !isAdmin);
+        
 
-  // Sử dụng tile sáng dễ nhìn
+        // Xử lý tùy theo vai trò
+        if (isAdmin) {
+          console.log("Chuyển sang chế độ Admin");
+          isBlockMode = true;
+          // Ví dụ: bật tính năng chỉ dành cho Admin
+        } else {
+          console.log("Chuyển sang chế độ Guest");
+          isBlockMode = false;
+          // Ví dụ: ẩn các công cụ Admin
+        }
+    }
+  // Gán sự kiện click
+  btn.addEventListener("click", handleRoleToggle);
+
+  
+  const map = L.map('map').setView([21.0453, 105.8426], 16);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors',
-  maxZoom: 19
-}).addTo(map);  
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
 
-  // Duyệt qua danh sách node và vẽ chấm tròn
+  let selectedPoints = [];
+  let blockedEdges = [];
+  let cutLinePoints = [];
+
   nodes.forEach(node => {
     L.circleMarker([node.lat, node.lon], {
       radius: 3,
       color: 'blue',
       fillColor: 'blue',
       fillOpacity: 0.9
-    }).addTo(map)
-    .bindTooltip(`Node ${node.node_id}`);
+    }).addTo(map).bindTooltip(`Node ${node.node_id}`);
   });
 
-  // Hàm tính khoảng cách giữa 2 điểm (đơn vị: mét)
   function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // Bán kính Trái đất (m)
+    const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
     const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Khoảng cách (m)
-    return d;
+    const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
-  let selectedPoints = [];
-  // Xử lý sự kiện click trên bản đồ
-  function highlightExploredNodes(exploredNodes, callback) {
-        let index = 0;
 
-        const interval = setInterval(() => {
-          if (index >= exploredNodes.length) {
-            clearInterval(interval); // Dừng khi đã tô hết node
-            if (callback) callback(); // Gọi callback nếu có
-            return;
-          }
+  function segmentsIntersect(p1, p2, q1, q2) {
+    function ccw(a, b, c) {
+      return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+    }
+    return ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2);
+  }
 
-          const nodeId = exploredNodes[index];
-          const node = nodes.find(n => n.node_id === nodeId);
+  function detectBlockedEdgesByCut(cutLine) {
+    const [p1, p2] = cutLine;
+    for (let u = 0; u < nodes.length; u++) {
+      const nodeU = nodes[u];
+      const idU = nodeU.node_id;
 
-          if (node) {
-            L.circleMarker([node.lat, node.lon], {
-              radius: 4,
-              color: 'purple',
-              fillColor: 'purple',
-              fillOpacity: 1
-            }).addTo(map);
-          }
+      for (let v = u + 1; v < nodes.length; v++) {
+        const nodeV = nodes[v];
+        const idV = nodeV.node_id;
 
-          index++;
-        }, 100); // Mỗi node được tô sau 100ms
+        const a = [nodeU.lat, nodeU.lon];
+        const b = [nodeV.lat, nodeV.lon];
+
+        if (segmentsIntersect(p1, p2, a, b)) {
+          blockedEdges.push([idU, idV]);
+          console.log(`🚫 Cấm đường: ${idU} - ${idV}`);
+        }
       }
-      function drawPath(path) {
-        // Tạo mảng chứa các điểm (lat, lon) của path
-          const pathCoords = path.map(nodeId => {
-          const node = nodes.find(n => n.node_id === nodeId);
-          return [node.lat, node.lon];
-        });
+    }
+  }
 
-        // Vẽ đường nối các điểm
-        L.polyline(pathCoords, {
-          color: 'green', // Màu của đường
-          weight: 4, // Độ dày đường
-          opacity: 0.7, // Độ mờ của đường
+  function highlightExploredNodes(explored, callback) {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= explored.length) {
+        clearInterval(interval);
+        if (callback) callback();
+        return;
+      }
+      const node = nodes.find(n => n.node_id === explored[i]);
+      if (node) {
+        L.circleMarker([node.lat, node.lon], {
+          radius: 4,
+          color: 'purple',
+          fillColor: 'purple',
+          fillOpacity: 1
         }).addTo(map);
       }
-  map.on('click', function(e) {
-    // Nếu đã chọn đủ 2 điểm thì không làm gì cả
-    if (selectedPoints.length >= 2) return;
+      i++;
+    }, 100);
+  }
 
-    // Lấy toạ độ click
+  function drawPath(path) {
+    const latlngs = path.map(id => {
+      const node = nodes.find(n => n.node_id === id);
+      return [node.lat, node.lon];
+    });
+    L.polyline(latlngs, {
+      color: 'green',
+      weight: 4,
+      opacity: 0.8
+    }).addTo(map);
+  }
+
+  map.on('click', function(e) {
+  //  const isBlockMode = document.getElementById("blockMode").checked;
     const clickedLat = e.latlng.lat;
     const clickedLon = e.latlng.lng;
 
-    // Tìm node gần nhất chưa được chọn
+    if (isBlockMode) {
+      cutLinePoints.push([clickedLat, clickedLon]);
+
+      if (cutLinePoints.length === 2) {
+        L.polyline(cutLinePoints, {
+          color: 'black',
+          dashArray: '4,4'
+        }).addTo(map);
+
+        detectBlockedEdgesByCut(cutLinePoints);
+        cutLinePoints = [];
+      }
+      return;
+    }
+
     let closestNode = null;
-    let minDistance = Infinity;
+    let minDist = Infinity;
 
     nodes.forEach(node => {
-        if (selectedPoints.includes(node.node_id)) return; // bỏ qua nếu đã chọn
-
-        const distance = getDistance(clickedLat, clickedLon, node.lat, node.lon);
-        if (distance < minDistance) {
-        minDistance = distance;
+      const d = getDistance(clickedLat, clickedLon, node.lat, node.lon);
+      if (d < minDist) {
+        minDist = d;
         closestNode = node;
-        }
+      }
     });
 
-    // Nếu còn node để chọn
-    if (closestNode) {
-        // Vẽ node màu đỏ
-        L.circleMarker([closestNode.lat, closestNode.lon], {
-        radius: 3,
+    if (!closestNode) return;
+
+    if (selectedPoints.length < 2) {
+      selectedPoints.push(closestNode.node_id);
+      L.circleMarker([closestNode.lat, closestNode.lon], {
+        radius: 6,
         color: 'red',
         fillColor: 'red',
         fillOpacity: 1
-        }).addTo(map);   
-
-        // Thêm node vào danh sách
-        selectedPoints.push(closestNode.node_id);
-
-        // Nếu đã đủ 2 điểm
-        if (selectedPoints.length === 2) {
-              setTimeout(() => {
-                alert("Đã chọn đủ 2 điểm. Gửi yêu cầu đến backend.");
-
-                // Gửi request POST
-                fetch("http://127.0.0.1:5000/find_path", {
-                  method: "POST",
-                  headers: {
-                  "Content-Type": "application/json"
-                },
-                
-                body: JSON.stringify({
-                start: selectedPoints[0],
-                end: selectedPoints[1]
-                })
-                })
-                  .then(res => res.json())
-                  .then( data => {
-                  console.log("Kết quả từ backend:", data);
-                // Bạn có thể dùng dữ liệu để vẽ đường ở đây
-                highlightExploredNodes(data.explored_nodes , () => {
-                  drawPath(data.path); // Vẽ đường đi
-                }); // Tô màu các node đã được khám phá
-                })
-                  .catch(err => console.error("Lỗi khi gọi API:", err));
-
-              }, 10); // Delay nhẹ để marker đỏ render xong
-          }
-
-
+      }).addTo(map);
     }
-});
 
-
+    if (selectedPoints.length === 2) {
+      fetch("http://127.0.0.1:5000/find_path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          start: selectedPoints[0],
+          end: selectedPoints[1],
+          blocked_edges: blockedEdges
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log(data);
+        if (data.path) {
+          highlightExploredNodes(data.explored_nodes, () => {
+            drawPath(data.path);
+          });
+        } else {
+          alert(data.error || "Không tìm thấy đường đi.");
+        }
+      });
+    }
+  });
 </script>
-
 </body>
 </html>
