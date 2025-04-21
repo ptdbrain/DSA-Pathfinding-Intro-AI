@@ -8,30 +8,70 @@
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { height: 100vh; width: 100%; }
-    #toolbar {
+    .top-center {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
       z-index: 1000;
-      background: white;
-      padding: 10px;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      font-family: sans-serif;
+    }
+
+    .toggle-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .admin {
+      background-color: #f44336;
+    }
+
+    .guest {
+      background-color: #4CAF50;
     }
   </style>
 </head>
 <body>
-
-<div id="toolbar">
-  <label><input type="checkbox" id="blockMode"> Chế độ chọn đường bị cấm</label>
-</div>
+  <div class="top-center">
+    <button id="toggleBtn" class="toggle-btn guest" data-role="guest">Guest</button>
+  </div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="data/nodes.js"></script>
 
 <script>
+    //guess admin button
+    let isBlockMode = false;
+    const btn = document.getElementById("toggleBtn");
+    function handleRoleToggle() {
+        const isAdmin = btn.dataset.role === "guest";
+        btn.dataset.role = isAdmin ? "admin" : "guest";
+        btn.textContent = isAdmin ? "Admin" : "Guest";
+        btn.classList.toggle("admin", isAdmin);
+        btn.classList.toggle("guest", !isAdmin);
+        
+
+        // Xử lý tùy theo vai trò
+        if (isAdmin) {
+          console.log("Chuyển sang chế độ Admin");
+          isBlockMode = true;
+          // Ví dụ: bật tính năng chỉ dành cho Admin
+        } else {
+          console.log("Chuyển sang chế độ Guest");
+          isBlockMode = false;
+          // Ví dụ: ẩn các công cụ Admin
+        }
+    }
+  // Gán sự kiện click
+  btn.addEventListener("click", handleRoleToggle);
+
+  
   const map = L.map('map').setView([21.0453, 105.8426], 16);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
@@ -123,7 +163,7 @@
   }
 
   map.on('click', function(e) {
-    const isBlockMode = document.getElementById("blockMode").checked;
+  //  const isBlockMode = document.getElementById("blockMode").checked;
     const clickedLat = e.latlng.lat;
     const clickedLon = e.latlng.lng;
 
@@ -177,6 +217,7 @@
       })
       .then(res => res.json())
       .then(data => {
+        console.log(data);
         if (data.path) {
           highlightExploredNodes(data.explored_nodes, () => {
             drawPath(data.path);

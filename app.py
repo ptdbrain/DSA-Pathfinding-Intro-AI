@@ -56,7 +56,7 @@ def find_path():
 
     if 'start' not in data or 'end' not in data:
         return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
-
+    print(f"Received data: {data}")
     start = int(data['start'])
     end = int(data['end'])
     num_iterations = int(data.get('iterations', 10))
