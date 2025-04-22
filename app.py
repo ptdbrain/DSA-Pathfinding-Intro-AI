@@ -2,7 +2,6 @@ import csv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from a_star import astar
-
 edges_file = 'data/adj_list_with_weights.csv'
 adj_dict = {}
 
@@ -53,7 +52,8 @@ adj_list = adj_dict  # Gán đồ thị gốc
 @app.route('/find_path', methods=['POST'])
 def find_path():
     data = request.get_json()
-
+    print("ádbfmdsfbmsdnbf")
+    print(f"Received data: {data}")
     if 'start' not in data or 'end' not in data:
         return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
     print(f"Received data: {data}")
@@ -61,9 +61,10 @@ def find_path():
     end = int(data['end'])
     num_iterations = int(data.get('iterations', 10))
     blocked_edges = data.get('blocked_edges', [])  # Danh sách cạnh bị cấm, dạng [[id1, id2], ...]
+    algorithm = data.get('algorithm', 'A*')
 
     print(f"\n=== Finding path from {start} to {end} ===")
-
+    print(f"Algorithm: {algorithm}")
     if start not in adj_list or end not in adj_list:
         return jsonify({"error": f"Invalid 'start' or 'end' node. {start} or {end} not found in the graph."}), 400
 
