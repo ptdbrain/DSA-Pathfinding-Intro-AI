@@ -5,7 +5,6 @@ import math
 import csv
 import numpy as np
 from matplotlib.widgets import Button
-from djisktra import Dijkstra  # bạn cần tạo dijkstra.py chứa hàm này
 
 # Load data
 nodes_file = "nodes.csv"
@@ -138,7 +137,7 @@ for node in nodes_in_positions - nodes_in_adj:
 
 # Import A* algorithm nếu có
 try:
-    from a_star import astar
+    from algorithm.a_star import astar
     a_star_available = True
     print("Đã import thành công module a_star")
 except ImportError:
@@ -463,6 +462,5 @@ run_button.on_clicked(run_animation)
 ax_save = plt.axes([0.65, 0.05, 0.2, 0.05])
 save_button = Button(ax_save, 'Save Animation')
 save_button.on_clicked(save_animation)
-
 
 plt.show()
