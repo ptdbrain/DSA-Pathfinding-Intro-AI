@@ -2,7 +2,7 @@ from typing import Dict
 # input: a dictionary, source, destination, and integer num_of_iterations
 # output: dict or list of nodes explored after n iterations or if destination reached, then return path to destination with all the explored nodes
 
-def Dijkstra(adj_list: Dict[int, Dict[int, float]], source: int, destination: int, num_of_iterations: int):
+def dijkstra(adj_list: Dict[int, Dict[int, float]], source: int, destination: int, num_of_iterations: int):
     explored_nodes = [] # List to keep track of explored nodes
 
     visited = {}
@@ -32,7 +32,7 @@ def Dijkstra(adj_list: Dict[int, Dict[int, float]], source: int, destination: in
             while predecessors[path[-1]] != source:
                 path.append(predecessors[path[-1]])
             path.append(source)
-            return path[::-1]
+            return path[::-1] , explored_nodes  # Return the path and the list of explored nodes
 
         # Update distances and predecessors for neighbors of the current vertex
         for neighbor in adj_list[current_vertex].keys():

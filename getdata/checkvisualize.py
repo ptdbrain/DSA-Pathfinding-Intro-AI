@@ -137,7 +137,7 @@ for node in nodes_in_positions - nodes_in_adj:
 
 # Import A* algorithm nếu có
 try:
-    from a_star import astar
+    from algorithm.a_star import astar
     a_star_available = True
     print("Đã import thành công module a_star")
 except ImportError:

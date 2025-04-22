@@ -1,7 +1,12 @@
 import csv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from a_star import astar
+from algorithm.a_star import astar
+from algorithm.dijkstra import dijkstra
+from algorithm.bfs import bfs
+from algorithm.dfs import dfs
+
+
 edges_file = 'data/adj_list_with_weights.csv'
 adj_dict = {}
 
@@ -52,7 +57,6 @@ adj_list = adj_dict  # Gán đồ thị gốc
 @app.route('/find_path', methods=['POST'])
 def find_path():
     data = request.get_json()
-    print("ádbfmdsfbmsdnbf")
     print(f"Received data: {data}")
     if 'start' not in data or 'end' not in data:
         return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
@@ -81,9 +85,19 @@ def find_path():
                 del adj_list_filtered[u][v]
             if v in adj_list_filtered and u in adj_list_filtered[v]:
                 del adj_list_filtered[v][u]
+        algorithms = {
+            'A Star': astar,
+            'Dijkstra': dijkstra,
+            'BFS': bfs,
+            'DFS': dfs
+        }
+        print(algorithm)
+        if algorithm in algorithms:
+            path, explored_nodes = algorithms[algorithm](adj_list_filtered, start, end, num_iterations)
+            list_explore_node = list(explored_nodes)
 
-        path, explored_nodes = astar(adj_list_filtered, start, end, num_iterations)
-        list_explore_node = list(explored_nodes)
+        else:
+            return jsonify({"error": "Invalid algorithm specified."}), 400
 
         if path:
             print("✅ Path found:", path)

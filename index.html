@@ -148,8 +148,8 @@
   <select id="algorithmSelect" class="algorithm-select">
       <option value="Dijkstra">Dijkstra</option>
       <option value="A Star">A Star</option>
-      <option value="UCS">UCS</option>
-      <option value="Greedy BFS">Greedy BFS</option>
+      <option value="BFS">BFS</option>
+      <option value="DFS">DFS</option>
   </select>
   <button id="toggleNodes" class="btn btn-primary btn-block">Toggle Nodes</button>
   <button id="togglePaths" class="btn btn-secondary btn-block">Toggle Paths</button>
@@ -300,7 +300,7 @@
         }
       }
       i++;
-    }, 100);
+    }, 50);
     reset = false; // Đặt lại biến reset về false sau khi bắt đầu highlight
   }
 
