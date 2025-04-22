@@ -34,6 +34,107 @@
     .guest {
       background-color: #4CAF50;
     }
+    .control-panel {
+      display: inline-block;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background-color: #ffffff; /* Màu nền trắng */
+      padding: 20px; /* Tăng khoảng cách bên trong */
+      border-radius: 15px; /* Bo góc mềm mại hơn */
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Hiệu ứng đổ bóng mạnh hơn */
+      width: 300px; /* Tăng chiều rộng */
+      font-family: 'Arial', sans-serif; /* Font chữ hiện đại */
+    }
+    .control-panel h5 {
+      margin-bottom: 20px;
+      font-size: 20px; /* Tăng kích thước chữ */
+      font-weight: bold; /* Chữ đậm */
+      color: #333; /* Màu chữ */
+      text-align: center; /* Căn giữa tiêu đề */
+    }
+    #algorithmSelect {
+      display: block; /* Ẩn select mặc định */
+    }
+    .algorithm-select {
+      width: 100%;  
+      padding: 12px; /* Tăng khoảng cách bên trong */
+      font-size: 16px; /* Kích thước chữ */
+      border: 2px solid #007bff; /* Viền màu xanh */
+      border-radius: 10px; /* Bo góc nhiều hơn */
+      background-color: #f9f9f9; /* Màu nền sáng hơn */
+      color: #333; /* Màu chữ */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Hiệu ứng đổ bóng */
+      transition: all 0.3s ease; /* Hiệu ứng chuyển đổi mượt */
+      appearance: none; /* Loại bỏ kiểu mặc định của trình duyệt */
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23007bff" d="M2 0L0 2h4z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 10px;
+    }
+
+    .algorithm-select:hover {
+      background-color: #e6f7ff; /* Màu nền khi hover */
+      border-color: #0056b3; /* Đổi màu viền khi hover */
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Tăng hiệu ứng đổ bóng */
+    }
+
+    .algorithm-select:focus {
+      border-color: #0056b3; /* Màu viền khi focus */
+      box-shadow: 0 0 10px rgba(0, 86, 179, 0.5); /* Hiệu ứng đổ bóng khi focus */
+      outline: none; /* Loại bỏ viền mặc định */
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin-top: 10px; /* Khoảng cách giữa các nút */
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .resetButton {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin-top: 10px; /* Khoảng cách giữa các nút */
+    } 
+    .resetButton:hover {
+      background-color: #87929a;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -41,14 +142,31 @@
     <button id="toggleBtn" class="toggle-btn guest" data-role="guest">Guest</button>
   </div>
 <div id="map"></div>
+<div class="control-panel" id= "control-panel">
+  <h5>Map Controls</h5>
+  <label for="algorithmSelect">Choose Algorithm:</label>
+  <select id="algorithmSelect" class="algorithm-select">
+      <option value="Dijkstra">Dijkstra</option>
+      <option value="A Star">A Star</option>
+      <option value="BFS">BFS</option>
+      <option value="DFS">DFS</option>
+  </select>
+  <button id="toggleNodes" class="btn btn-primary btn-block">Toggle Nodes</button>
+  <button id="togglePaths" class="btn btn-secondary btn-block">Toggle Paths</button>
+  <button id="resetButton" class ="resetButton">Reset</button>
+</div>                              
+
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="data/nodes.js"></script>
 
 <script>
     //guess admin button
+    let reset = false;
     let isBlockMode = false;
+    let algorithm = "Dijkstra"; // Mặc định là Dijkstra
     const btn = document.getElementById("toggleBtn");
+    const resetButton = document.getElementById("resetButton");
     function handleRoleToggle() {
         const isAdmin = btn.dataset.role === "guest";
         btn.dataset.role = isAdmin ? "admin" : "guest";
@@ -61,16 +179,37 @@
         if (isAdmin) {
           console.log("Chuyển sang chế độ Admin");
           isBlockMode = true;
+          const controlpanel = document.getElementById("control-panel");
+          controlpanel.style.display = isAdmin ? "none" : "inline-block";
           // Ví dụ: bật tính năng chỉ dành cho Admin
         } else {
           console.log("Chuyển sang chế độ Guest");
           isBlockMode = false;
           // Ví dụ: ẩn các công cụ Admin
+          const controlpanel = document.getElementById("control-panel");
+          controlpanel.style.display = isAdmin ? "none" : "inline-block";
         }
     }
   // Gán sự kiện click
   btn.addEventListener("click", handleRoleToggle);
-
+  //reset button
+  resetButton.addEventListener("click", function() {
+    selectedPoints = [];
+    datapath = [];
+    exploredNodes = [];
+    reset = true;
+    // Xóa tất cả các marker và đường đi trên bản đồ
+    map.eachLayer(function(layer) {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
+        map.removeLayer(layer);
+      }
+    });
+  });
+  // Gán sự kiện thay đổi thuật toán
+  function handleAlgorithmChange() {
+    algorithm = document.getElementById("algorithmSelect").value;
+    console.log("Chọn thuật toán:", algorithm);
+  }
   
   const map = L.map('map').setView([21.0453, 105.8426], 16);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
@@ -81,15 +220,17 @@
   let selectedPoints = [];
   let blockedEdges = [];
   let cutLinePoints = [];
+  let datapath = [];
+  let exploredNodes = [];
 
-  nodes.forEach(node => {
-    L.circleMarker([node.lat, node.lon], {
-      radius: 3,
-      color: 'blue',
-      fillColor: 'blue',
-      fillOpacity: 0.9
-    }).addTo(map).bindTooltip(`Node ${node.node_id}`);
-  });
+  // nodes.forEach(node => {
+  //   L.circleMarker([node.lat, node.lon], {
+  //     radius: 3,
+  //     color: 'blue',
+  //     fillColor: 'blue',
+  //     fillOpacity: 0.9
+  //   }).addTo(map).bindTooltip(`Node ${node.node_id}`);
+  // });
 
   function getDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3;
@@ -129,29 +270,43 @@
     }
   }
 
+  let highlightInterval; // Biến toàn cục để lưu interval
+
   function highlightExploredNodes(explored, callback) {
     let i = 0;
-    const interval = setInterval(() => {
-      if (i >= explored.length) {
-        clearInterval(interval);
-        if (callback) callback();
+
+    // Xóa interval trước đó nếu tồn tại
+    if (highlightInterval) {
+      clearInterval(highlightInterval);
+    }
+
+    highlightInterval = setInterval(() => {
+      if (i >= explored.length || reset) {
+        clearInterval(highlightInterval); // Dừng interval
+        highlightInterval = null; // Đặt lại biến
+        if (callback) callback(); // Gọi callback nếu có
         return;
       }
+
       const node = nodes.find(n => n.node_id === explored[i]);
       if (node) {
-        L.circleMarker([node.lat, node.lon], {
-          radius: 4,
-          color: 'purple',
-          fillColor: 'purple',
-          fillOpacity: 1
-        }).addTo(map);
+        if (!reset) {
+          L.circleMarker([node.lat, node.lon], {
+            radius: 4,
+            color: 'purple',
+            fillColor: 'purple',
+            fillOpacity: 0.9
+          }).addTo(map).bindTooltip(`Node ${node.node_id}`);
+        }
       }
       i++;
-    }, 100);
+    }, 50);
+    reset = false; // Đặt lại biến reset về false sau khi bắt đầu highlight
   }
 
   function drawPath(path) {
-    const latlngs = path.map(id => {
+    if (!reset) {
+      const latlngs = path.map(id => {
       const node = nodes.find(n => n.node_id === id);
       return [node.lat, node.lon];
     });
@@ -160,7 +315,12 @@
       weight: 4,
       opacity: 0.8
     }).addTo(map);
+    }
+    else{ reset = false; } // Đặt lại biến reset về false sau khi vẽ đường đi
+
   }
+  
+  
 
   map.on('click', function(e) {
   //  const isBlockMode = document.getElementById("blockMode").checked;
@@ -197,6 +357,7 @@
 
     if (selectedPoints.length < 2) {
       selectedPoints.push(closestNode.node_id);
+      console.log("Selected points:", selectedPoints);
       L.circleMarker([closestNode.lat, closestNode.lon], {
         radius: 6,
         color: 'red',
@@ -204,7 +365,8 @@
         fillOpacity: 1
       }).addTo(map);
     }
-
+    algorithm = document.getElementById("algorithmSelect").value;
+    console.log(algorithm);
     if (selectedPoints.length === 2) {
       fetch("http://127.0.0.1:5000/find_path", {
         method: "POST",
@@ -212,15 +374,18 @@
         body: JSON.stringify({
           start: selectedPoints[0],
           end: selectedPoints[1],
-          blocked_edges: blockedEdges
+          blocked_edges: blockedEdges,
+          algorithm: algorithm
         })
       })
       .then(res => res.json())
       .then(data => {
+        datapath = data.path;
+        exploredNodes = data.explored_nodes;
         console.log(data);
         if (data.path) {
-          highlightExploredNodes(data.explored_nodes, () => {
-            drawPath(data.path);
+          highlightExploredNodes(exploredNodes, () => {
+            drawPath(datapath);
           });
         } else {
           alert(data.error || "Không tìm thấy đường đi.");
