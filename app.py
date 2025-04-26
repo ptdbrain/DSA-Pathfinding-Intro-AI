@@ -7,7 +7,7 @@ from algorithm.bfs import bfs
 from algorithm.dfs import dfs
 
 
-edges_file = 'data/adj_list_with_weights.csv'
+edges_file = 'data/fileCsv/adj_list_with_weights.csv'
 adj_dict = {}
 
 with open(edges_file, 'r') as f:
@@ -60,15 +60,16 @@ def find_path():
     print(f"Received data: {data}")
     if 'start' not in data or 'end' not in data:
         return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
-    print(f"Received data: {data}")
+
     start = int(data['start'])
     end = int(data['end'])
     num_iterations = int(data.get('iterations', 10))
-    blocked_edges = data.get('blocked_edges', [])  # Danh sách cạnh bị cấm, dạng [[id1, id2], ...]
+    blocked_edges = data.get('blocked_edges', [])
     algorithm = data.get('algorithm', 'A*')
 
     print(f"\n=== Finding path from {start} to {end} ===")
     print(f"Algorithm: {algorithm}")
+    
     if start not in adj_list or end not in adj_list:
         return jsonify({"error": f"Invalid 'start' or 'end' node. {start} or {end} not found in the graph."}), 400
 
@@ -76,46 +77,56 @@ def find_path():
         # Tạo bản sao đồ thị và xóa các cạnh bị cấm
         from copy import deepcopy
         adj_list_filtered = deepcopy(adj_list)
+        print(f"Blocked edges: {blocked_edges}")
 
+        # Xử lý các cạnh bị cấm
         for edge in blocked_edges:
             if len(edge) != 2:
-                continue  # Bỏ qua nếu không hợp lệ
+                continue
             u, v = edge
-            if u in adj_list_filtered and v in adj_list_filtered[u]:
-                del adj_list_filtered[u][v]
-            if v in adj_list_filtered and u in adj_list_filtered[v]:
-                del adj_list_filtered[v][u]
+            
+            # Xóa cạnh theo cả hai chiều
+            if isinstance(adj_list_filtered[u], dict):
+                adj_list_filtered[u].pop(v, None)
+            elif isinstance(adj_list_filtered[u], list):
+                if v in adj_list_filtered[u]:
+                    adj_list_filtered[u].remove(v)
+                    
+            if isinstance(adj_list_filtered[v], dict):
+                adj_list_filtered[v].pop(u, None)
+            elif isinstance(adj_list_filtered[v], list):
+                if u in adj_list_filtered[v]:
+                    adj_list_filtered[v].remove(u)
+
         algorithms = {
             'A Star': astar,
             'Dijkstra': dijkstra,
             'BFS': bfs,
             'DFS': dfs
         }
-        print(algorithm)
+
         if algorithm in algorithms:
             path, explored_nodes = algorithms[algorithm](adj_list_filtered, start, end, num_iterations)
             list_explore_node = list(explored_nodes)
-
+            
+            if path:
+                print("✅ Path found:", path)
+                list_explore_node.insert(0, start)
+                list_explore_node.append(end)
+                return jsonify({
+                    "path": path,
+                    "explored_nodes": list_explore_node,
+                    "message": "Path found successfully."
+                })
+            else:
+                print("❌ No path found.")
+                return jsonify({"error": "No path found between the nodes."}), 404
         else:
             return jsonify({"error": "Invalid algorithm specified."}), 400
 
-        if path:
-            print("✅ Path found:", path)
-            list_explore_node.insert(0, start)
-            list_explore_node.append(end)
-
-            return jsonify({
-                "path": path,
-                "explored_nodes": list_explore_node,
-                "message": "Path found successfully."
-            })
-        else:
-            print("❌ No path found.")
-            return jsonify({"error": "No path found between the nodes."}), 404
-
     except Exception as e:
-        print(f"❌ Error during A* search: {e}")
-        return jsonify({"error": f"Error during A* search: {str(e)}"}), 500
+        print(f"❌ Error during pathfinding: {e}")
+        return jsonify({"error": f"Error during pathfinding: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

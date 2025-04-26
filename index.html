@@ -1,646 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Bản đồ với Node</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; }
-    #map { height: 100vh; width: 100%; }
-    .top-center {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      text-align: center;
-      z-index: 1000;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bản đồ với Node</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Import thư viện Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    />
+    <!-- Import CSS tùy chỉnh -->
+    <link rel="stylesheet" href="ui/css/styles.css" />
+  </head>
 
-    .toggle-btn {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+  <body>
+    <!-- Container cho bản đồ -->
+    <div id="map"></div>
 
-    .admin {
-      background-color: #f44336;
-    }
-
-    .guest {
-      background-color: #4CAF50;
-    }
-    .control-panel {
-      display: inline-block;
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      background-color: #ffffff; /* Màu nền trắng */
-      padding: 20px; /* Tăng khoảng cách bên trong */
-      border-radius: 15px; /* Bo góc mềm mại hơn */
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Hiệu ứng đổ bóng mạnh hơn */
-      width: 300px; /* Tăng chiều rộng */
-      font-family: 'Arial', sans-serif; /* Font chữ hiện đại */
-    }
-    .control-panel h5 {
-      margin-bottom: 20px;
-      font-size: 20px; /* Tăng kích thước chữ */
-      font-weight: bold; /* Chữ đậm */
-      color: #333; /* Màu chữ */
-      text-align: center; /* Căn giữa tiêu đề */
-    }
-    #algorithmSelect {
-      display: block; /* Ẩn select mặc định */
-    }
-    .algorithm-select {
-      width: 100%;  
-      padding: 12px; /* Tăng khoảng cách bên trong */
-      font-size: 16px; /* Kích thước chữ */
-      border: 2px solid #007bff; /* Viền màu xanh */
-      border-radius: 10px; /* Bo góc nhiều hơn */
-      background-color: #f9f9f9; /* Màu nền sáng hơn */
-      color: #333; /* Màu chữ */
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Hiệu ứng đổ bóng */
-      transition: all 0.3s ease; /* Hiệu ứng chuyển đổi mượt */
-      appearance: none; /* Loại bỏ kiểu mặc định của trình duyệt */
-      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23007bff" d="M2 0L0 2h4z"/></svg>');
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      background-size: 10px;
-    }
-
-    .algorithm-select:hover {
-      background-color: #e6f7ff; /* Màu nền khi hover */
-      border-color: #0056b3; /* Đổi màu viền khi hover */
-      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Tăng hiệu ứng đổ bóng */
-    }
-
-    .algorithm-select:focus {
-      border-color: #0056b3; /* Màu viền khi focus */
-      box-shadow: 0 0 10px rgba(0, 86, 179, 0.5); /* Hiệu ứng đổ bóng khi focus */
-      outline: none; /* Loại bỏ viền mặc định */
-    }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 12px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      text-align: center;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      margin-top: 10px; /* Khoảng cách giữa các nút */
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background-color: #0056b3;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn-secondary {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background-color: #5a6268;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-    .resetButton {
-      display: block;
-      width: 100%;
-      padding: 12px 20px;
-      font-size: 16px;
-      font-weight: bold;
-      text-align: center;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      margin-top: 10px; /* Khoảng cách giữa các nút */
-    } 
-    .resetButton:hover {
-      background-color: #87929a;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-    /* CSS cho Admin Control Panel */
-    .admin-control-panel {
-      display: none;
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 1000;
-      background-color: #f8f9fa; /* Màu nền nhạt */
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* Hiệu ứng đổ bóng */
-      width: 350px;
-      font-family: 'Arial', sans-serif;
-      border: 2px solid #007bff; /* Viền màu xanh */
-    }
-
-    .admin-control-panel .control-panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: bold;
-      margin-bottom: 10px;
-      font-size: 18px;
-      color: #007bff;
-    }
-
-    .admin-control-panel .hide-panel-btn {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: #333;
-    }
-
-    .admin-control-panel .main-option {
-      margin-bottom: 15px;
-    }
-
-    .admin-control-panel .sub-options {
-      margin-top: 10px;
-      padding-left: 10px;
-    }
-
-    .admin-control-panel .btn {
-      display: block;
-      width: 100%;
-      padding: 10px 15px;
-      font-size: 14px;
-      font-weight: bold;
-      text-align: center;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      margin-top: 10px;
-    }
-
-    .admin-control-panel .btn-warning {
-      background-color: #ffc107;
-      color: #212529;
-    }
-
-    .admin-control-panel .btn-warning:hover {
-      background-color: #e0a800;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-control-panel .btn-primary {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .admin-control-panel .btn-primary:hover {
-      background-color: #0056b3;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-control-panel .btn-success {
-      background-color: #28a745;
-      color: white;
-    }
-
-    .admin-control-panel .btn-success:hover {
-      background-color: #218838;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-control-panel .btn-info {
-      background-color: #17a2b8;
-      color: white;
-    }
-
-    .admin-control-panel .btn-info:hover {
-      background-color: #117a8b;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-control-panel .btn-danger {
-      background-color: #dc3545;
-      color: white;
-    }
-
-    .admin-control-panel .btn-danger:hover {
-      background-color: #c82333;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .admin-control-panel #banEdgeStatus {
-      margin-top: 10px;
-      font-size: 90%;
-      color: #17a2b8;
-    }
-  </style>
-</head>
-<body>
-  <div class="top-center">
-    <button id="toggleBtn" class="toggle-btn guest" data-role="guest">Guest</button>
-  </div>
-<div id="map"></div>
-<div class="control-panel" id= "control-panel">
-  <h5>Map Controls</h5>
-  <label for="algorithmSelect">Choose Algorithm:</label>
-  <select id="algorithmSelect" class="algorithm-select">
-      <option value="Dijkstra">Dijkstra</option>
-      <option value="A Star">A Star</option>
-      <option value="BFS">BFS</option>
-      <option value="DFS">DFS</option>
-  </select>
-  <button id="toggleNodes" class="btn btn-primary btn-block">Toggle Nodes</button>
-  <button id="togglePaths" class="btn btn-secondary btn-block">Toggle Paths</button>
-  <button id="resetButton" class ="resetButton">Reset</button>
-</div>                      
-<!-- Admin Control Panel -->        
-<div class="admin-control-panel" id="adminControlPanel">
-    <div class="control-panel-header">
-        <span>Quản lý cấm</span>
-        <button class="hide-panel-btn" id="hidePanelBtn" title="Ẩn panel">&times;</button>
-    </div>
-    <!-- Cấm đường -->
-    <div class="main-option">
-        <button id="toggleBanEdge" class="btn btn-warning btn-block btn-sm">Cấm đường</button>
-        <div id="banEdgeOptions" class="sub-options" style="display: none;">
-            <label><input type="radio" name="direction" value="both" checked> 2 chiều</label>
-            <label><input type="radio" name="direction" value="one-way"> 1 chiều (đầu→cuối)</label>
-            <button id="banEdgeBtn" class="btn btn-primary btn-sm my-1">Bật chế độ cấm đường</button>
-            <button id="restoreBanBtn" class="btn btn-success btn-sm my-1">Khôi phục đoạn vừa cấm</button>
+    <!-- Control Panel -->
+    <div class="control-panel" id="control-panel">
+      <!-- Panel Header với Toggle Switch -->
+      <div class="panel-header">
+        <div class="toggle-switch">
+          <input type="checkbox" id="roleToggle" class="toggle-input" />
+          <label for="roleToggle" class="toggle-slider"></label>
         </div>
-    </div>
-    <!-- Cấm vùng -->
-    <div class="main-option">
-        <button id="toggleBanArea" class="btn btn-warning btn-block btn-sm">Cấm vùng</button>
-        <div id="banAreaOptions" class="sub-options" style="display: none;">
-            <button id="banAreaBtn" class="btn btn-primary btn-sm my-1">Bật chế độ cấm vùng</button>
-            <button id="sendAreaBtn" class="btn btn-info btn-sm my-1">Gửi vùng cấm</button>
-            <button id="restoreBanAreaBtn" class="btn btn-success btn-sm my-1">Khôi phục vùng vừa cấm</button>
+      </div>
+
+      <!-- Guest Controls - Phần điều khiển cho người dùng thông thường -->
+      <div class="guest-controls" id="guestControls">
+        <div class="panel-section">
+          <h5>Tìm đường</h5>
+          <label for="algorithmSelect">Chọn thuật toán:</label>
+          <select id="algorithmSelect" class="algorithm-select">
+            <option value="Dijkstra">Dijkstra</option>
+            <option value="A Star">A Star</option>
+            <option value="BFS">BFS</option>
+            <option value="DFS">DFS</option>
+          </select>
+          <button id="toggleNodes" class="btn btn-primary">
+            Hiển thị Node
+          </button>
+          <button id="togglePaths" class="btn btn-secondary">
+            Hiển thị đường đi
+          </button>
+          <button id="guestResetButton" class="btn btn-danger">Làm mới</button>
         </div>
-    </div>
-    <!-- Tắc đường -->
-    <div class="main-option">
-        <button id="toggleTacEdge" class="btn btn-warning btn-block btn-sm">Tắc đường</button>
-        <div id="tacEdgeOptions" class="sub-options" style="display: none;">
-            <label>Hệ số tắc: <input type="number" id="tacFactor" value="5" min="2" max="20" style="width:50px"></label>
-            <button id="tacEdgeBtn" class="btn btn-primary btn-sm my-1">Bật chế độ tắc đường</button>
-            <button id="restoreTacBtn" class="btn btn-success btn-sm my-1">Khôi phục đoạn tắc vừa đánh dấu</button>
+      </div>
+
+      <!-- Admin Controls - Phần điều khiển cho admin -->
+      <div class="admin-controls" id="adminControls">
+        <div class="panel-section">
+          <h5>Quản lý đường đi</h5>
+          <!-- Phần cấm đường -->
+          <div class="control-group">
+            <button id="banEdgeBtn" class="btn btn-warning">
+              Bắt đầu cấm đường
+            </button>
+            <div class="radio-group">
+            <button id="restoreBanBtn" class="btn btn-success">
+              Khôi phục đoạn vừa cấm
+            </button>
+          </div>
+
+          <!-- Thêm phần đặt vật cản -->
+          <div class="control-group">
+            <button id="placeObstacleBtn" class="btn btn-warning">
+              Đặt vật cản
+            </button>
+            <div class="input-group">
+              <label
+                >Bán kính ảnh hưởng (m):
+                <input
+                  type="number"
+                  id="obstacleRadius"
+                  value="50"
+                  min="10"
+                  max="200"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Phần tắc đường -->
+          <div class="control-group">
+            <button id="trafficBtn" class="btn btn-warning">
+              Bắt đầu đánh dấu tắc đường
+            </button>
+            <div class="input-group">
+              <label
+                >Hệ số tắc:
+                <input type="number" id="trafficLevel" value="5" min="2" max="20"
+              /></label>
+            </div>
+            <button id="restoreTacBtn" class="btn btn-success">
+              Khôi phục đoạn tắc
+            </button>
+          </div>
+
+          <button id="adminResetButton" class="btn btn-danger">Làm mới</button>
         </div>
+      </div>
     </div>
 
-    <div id="banEdgeStatus" class="mt-2 text-info" style="font-size: 90%"></div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script src="data/nodes.js"></script>
-
-<script>
-    //guess admin button
-    let reset = false;
-    let isBlockMode = false;
-    let algorithm = "Dijkstra"; // Mặc định là Dijkstra
-    const btn = document.getElementById("toggleBtn");
-    const resetButton = document.getElementById("resetButton");
-    function handleRoleToggle() {
-        const isAdmin = btn.dataset.role === "guest";
-        btn.dataset.role = isAdmin ? "admin" : "guest";
-        btn.textContent = isAdmin ? "Admin" : "Guest";
-        btn.classList.toggle("admin", isAdmin);
-        btn.classList.toggle("guest", !isAdmin);
-        
-
-        // Xử lý tùy theo vai trò
-        if (isAdmin) {
-          console.log("Chuyển sang chế độ Admin");
-          isBlockMode = true;
-          const controlpanel = document.getElementById("control-panel");
-          controlpanel.style.display = isAdmin ? "none" : "inline-block";
-          // Ví dụ: bật tính năng chỉ dành cho Admin
-          const adminControlpanel = document.getElementById("adminControlPanel");
-          adminControlpanel.style.display = isAdmin ? "block" : "none";
-        } else {
-          console.log("Chuyển sang chế độ Guest");
-          isBlockMode = false;
-          // Ví dụ: ẩn các công cụ Admin
-          const controlpanel = document.getElementById("control-panel");
-          controlpanel.style.display = isAdmin ? "none" : "inline-block";
-
-          const adminControlpanel = document.getElementById("adminControlPanel");
-          adminControlpanel.style.display = isAdmin ? "block" : "none";
-        }
-    }
-  // Gán sự kiện click
-  btn.addEventListener("click", handleRoleToggle);
-  //reset button
-  resetButton.addEventListener("click", function() {
-    selectedPoints = [];
-    datapath = [];
-    exploredNodes = [];
-    reset = true;
-    // Xóa tất cả các marker và đường đi trên bản đồ
-    map.eachLayer(function(layer) {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
-        map.removeLayer(layer);
-      }
-    });
-  });
-  // Lắng nghe sự kiện click trên các nút trong Admin Control Panel
-document.addEventListener("DOMContentLoaded", function () {
-  // Nút Ẩn Panel
-  const hidePanelBtn = document.getElementById("hidePanelBtn");
-  const controlPanel = document.getElementById("controlPanel");
-  const showPanelBtn = document.getElementById("toggleBtn");
-
-  hidePanelBtn.addEventListener("click", function () {
-    controlPanel.style.display = "none";
-    showPanelBtn.style.display = "block";
-  });
-
-  // Nút Hiện Panel
-  showPanelBtn.addEventListener("click", function () {
-    controlPanel.style.display = "block";
-    showPanelBtn.style.display = "none";
-  });
-
-  // Nút Cấm đường
-  const toggleBanEdge = document.getElementById("toggleBanEdge");
-  const banEdgeOptions = document.getElementById("banEdgeOptions");
-
-  toggleBanEdge.addEventListener("click", function () {
-    banEdgeOptions.style.display =
-      banEdgeOptions.style.display === "none" ? "block" : "none";
-  });
-
-  // Nút Cấm vùng
-  const toggleBanArea = document.getElementById("toggleBanArea");
-  const banAreaOptions = document.getElementById("banAreaOptions");
-
-  toggleBanArea.addEventListener("click", function () {
-    banAreaOptions.style.display =
-      banAreaOptions.style.display === "none" ? "block" : "none";
-  });
-
-  // Nút Tắc đường
-  const toggleTacEdge = document.getElementById("toggleTacEdge");
-  const tacEdgeOptions = document.getElementById("tacEdgeOptions");
-
-  toggleTacEdge.addEventListener("click", function () {
-    tacEdgeOptions.style.display =
-      tacEdgeOptions.style.display === "none" ? "block" : "none";
-  });
-
-  // Nút Bật chế độ cấm đường
-  const banEdgeBtn = document.getElementById("banEdgeBtn");
-  banEdgeBtn.addEventListener("click", function () {
-    console.log("Bật chế độ cấm đường");
-    alert("Chế độ cấm đường đã được bật!");
-  });
-
-  // Nút Khôi phục đoạn vừa cấm
-  const restoreBanBtn = document.getElementById("restoreBanBtn");
-  restoreBanBtn.addEventListener("click", function () {
-    console.log("Khôi phục đoạn vừa cấm");
-    alert("Đoạn vừa cấm đã được khôi phục!");
-  });
-
-  // Nút Bật chế độ cấm vùng
-  const banAreaBtn = document.getElementById("banAreaBtn");
-  banAreaBtn.addEventListener("click", function () {
-    console.log("Bật chế độ cấm vùng");
-    alert("Chế độ cấm vùng đã được bật!");
-  });
-
-  // Nút Gửi vùng cấm
-  const sendAreaBtn = document.getElementById("sendAreaBtn");
-  sendAreaBtn.addEventListener("click", function () {
-    console.log("Gửi vùng cấm");
-    alert("Vùng cấm đã được gửi!");
-  });
-
-  // Nút Khôi phục vùng vừa cấm
-  const restoreBanAreaBtn = document.getElementById("restoreBanAreaBtn");
-  restoreBanAreaBtn.addEventListener("click", function () {
-    console.log("Khôi phục vùng vừa cấm");
-    alert("Vùng vừa cấm đã được khôi phục!");
-  });
-
-  // Nút Bật chế độ tắc đường
-  const tacEdgeBtn = document.getElementById("tacEdgeBtn");
-  tacEdgeBtn.addEventListener("click", function () {
-    const tacFactor = document.getElementById("tacFactor").value;
-    console.log(`Bật chế độ tắc đường với hệ số tắc: ${tacFactor}`);
-    alert(`Chế độ tắc đường đã được bật với hệ số tắc: ${tacFactor}`);
-  });
-
-  // Nút Khôi phục đoạn tắc vừa đánh dấu
-  const restoreTacBtn = document.getElementById("restoreTacBtn");
-  restoreTacBtn.addEventListener("click", function () {
-    console.log("Khôi phục đoạn tắc vừa đánh dấu");
-    alert("Đoạn tắc vừa đánh dấu đã được khôi phục!");
-  });
-});
-  // Gán sự kiện thay đổi thuật toán
-  function handleAlgorithmChange() {
-    algorithm = document.getElementById("algorithmSelect").value;
-    console.log("Chọn thuật toán:", algorithm);
-  }
-  
-  const map = L.map('map').setView([21.0453, 105.8426], 16);
-  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
-  }).addTo(map);
-
-  let selectedPoints = [];
-  let blockedEdges = [];
-  let cutLinePoints = [];
-  let datapath = [];
-  let exploredNodes = [];
-
-  // nodes.forEach(node => {
-  //   L.circleMarker([node.lat, node.lon], {
-  //     radius: 3,
-  //     color: 'blue',
-  //     fillColor: 'blue',
-  //     fillOpacity: 0.9
-  //   }).addTo(map).bindTooltip(`Node ${node.node_id}`);
-  // });
-
-  function getDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  }
-
-  function segmentsIntersect(p1, p2, q1, q2) {
-    function ccw(a, b, c) {
-      return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
-    }
-    return ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2);
-  }
-
-  function detectBlockedEdgesByCut(cutLine) {
-    const [p1, p2] = cutLine;
-    for (let u = 0; u < nodes.length; u++) {
-      const nodeU = nodes[u];
-      const idU = nodeU.node_id;
-
-      for (let v = u + 1; v < nodes.length; v++) {
-        const nodeV = nodes[v];
-        const idV = nodeV.node_id;
-
-        const a = [nodeU.lat, nodeU.lon];
-        const b = [nodeV.lat, nodeV.lon];
-
-        if (segmentsIntersect(p1, p2, a, b)) {
-          blockedEdges.push([idU, idV]);
-          console.log(`🚫 Cấm đường: ${idU} - ${idV}`);
-        }
-      }
-    }
-  }
-
-  let highlightInterval; // Biến toàn cục để lưu interval
-
-  function highlightExploredNodes(explored, callback) {
-    let i = 0;
-
-    // Xóa interval trước đó nếu tồn tại
-    if (highlightInterval) {
-      clearInterval(highlightInterval);
-    }
-
-    highlightInterval = setInterval(() => {
-      if (i >= explored.length || reset) {
-        clearInterval(highlightInterval); // Dừng interval
-        highlightInterval = null; // Đặt lại biến
-        if (callback) callback(); // Gọi callback nếu có
-        return;
-      }
-
-      const node = nodes.find(n => n.node_id === explored[i]);
-      if (node) {
-        if (!reset) {
-          L.circleMarker([node.lat, node.lon], {
-            radius: 4,
-            color: 'purple',
-            fillColor: 'purple',
-            fillOpacity: 0.9
-          }).addTo(map).bindTooltip(`Node ${node.node_id}`);
-        }
-      }
-      i++;
-    }, 50);
-    reset = false; // Đặt lại biến reset về false sau khi bắt đầu highlight
-  }
-
-  function drawPath(path) {
-    if (!reset) {
-      const latlngs = path.map(id => {
-      const node = nodes.find(n => n.node_id === id);
-      return [node.lat, node.lon];
-    });
-    L.polyline(latlngs, {
-      color: 'green',
-      weight: 4,
-      opacity: 0.8
-    }).addTo(map);
-    }
-    else{ reset = false; } // Đặt lại biến reset về false sau khi vẽ đường đi
-
-  }
-  
-  
-
-  map.on('click', function(e) {
-  //  const isBlockMode = document.getElementById("blockMode").checked;
-    const clickedLat = e.latlng.lat;
-    const clickedLon = e.latlng.lng;
-
-    if (isBlockMode) {
-      cutLinePoints.push([clickedLat, clickedLon]);
-
-      if (cutLinePoints.length === 2) {
-        L.polyline(cutLinePoints, {
-          color: 'black',
-          dashArray: '4,4'
-        }).addTo(map);
-
-        detectBlockedEdgesByCut(cutLinePoints);
-        cutLinePoints = [];
-      }
-      return;
-    }
-
-    let closestNode = null;
-    let minDist = Infinity;
-
-    nodes.forEach(node => {
-      const d = getDistance(clickedLat, clickedLon, node.lat, node.lon);
-      if (d < minDist) {
-        minDist = d;
-        closestNode = node;
-      }
-    });
-
-    if (!closestNode) return;
-
-    if (selectedPoints.length < 2) {
-      selectedPoints.push(closestNode.node_id);
-      console.log("Selected points:", selectedPoints);
-      L.circleMarker([closestNode.lat, closestNode.lon], {
-        radius: 6,
-        color: 'red',
-        fillColor: 'red',
-        fillOpacity: 1
-      }).addTo(map);
-    }
-    algorithm = document.getElementById("algorithmSelect").value;
-    console.log(algorithm);
-    if (selectedPoints.length === 2) {
-      fetch("http://127.0.0.1:5000/find_path", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start: selectedPoints[0],
-          end: selectedPoints[1],
-          blocked_edges: blockedEdges,
-          algorithm: algorithm
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        datapath = data.path;
-        exploredNodes = data.explored_nodes;
-        console.log(data);
-        if (data.path) {
-          highlightExploredNodes(exploredNodes, () => {
-            drawPath(datapath);
-          });
-        } else {
-          alert(data.error || "Không tìm thấy đường đi.");
-        }
-      });
-    }
-  });
-</script>
-</body>
+    <!-- Import JavaScript Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="data/fileJs/nodes.js"></script>
+    <script src="data/fileJs/adj_list.js"></script>
+    <!-- Import JavaScript tùy chỉnh -->
+    <script src="ui/js/main.js"></script>
+  </body>
 </html>

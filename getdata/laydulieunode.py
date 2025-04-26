@@ -4,7 +4,7 @@ import csv
 import math
 from shapely.geometry import LineString
 import geopandas as gpd
-
+import json
 # Hàm nội suy cạnh đồ thị
 # def interpolate_graph_edges(G, dist=50):
 #     G_new = nx.MultiDiGraph(G.copy())
@@ -187,16 +187,19 @@ def main():
         key = indices[node]
         adj_list_i[key] = indexed_neighbors
 
-    # Ghi adj_list
-    with open('adj_list.csv', 'w', newline='') as csvfile:
-        fieldnames = ['node_index', 'neighbors_indices']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for node_id, neighbors in adj_list_i.items():
-            writer.writerow({'node_index': node_id, 'neighbors_indices': neighbors})
+    adj_list_js = [
+        {'node_id': node_id, 'neighbors_indices': neighbors} 
+        for node_id, neighbors in adj_list_i.items()
+    ]
+    
+    # Ghi dữ liệu vào file .js
+    with open("data/adj_list.js", 'w') as jsonfile:
+        jsonfile.write("const adj_list = ")
+        json.dump(adj_list_js, jsonfile, indent=2)
+        jsonfile.write(";")
 
     # Ghi adj_list_with_weights
-    with open('adj_list_with_weights.csv', 'w', newline='') as csvfile2:
+    with open('data/adj_list_with_weights.csv', 'w', newline='') as csvfile2:
         fieldnames2 = ['node_id', 'neighbors_with_weights']
         writer2 = csv.DictWriter(csvfile2, fieldnames=fieldnames2)
         writer2.writeheader()
