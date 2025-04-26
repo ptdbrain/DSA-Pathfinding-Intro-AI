@@ -1,20 +1,21 @@
 // Các biến toàn cục
-let reset = false;
-let isBlockMode = false;
-let isDrawing = false;
-let algorithm = "Dijkstra";
-let selectedPoints = [];
-let blockedEdges = [];
-let startPoint = null;
-let temporaryLine = null;
-let points = [];
-let banPolyline = null;
-let bannedLines = [];
-let isPlacingObstacle = false;
-let obstacleMarkers = [];
+let reset = false; // Biến reset, dùng để reset lại bản đồ
+let isBlockMode = false; // Biến trạng thái vẽ đường cấm
+let isDrawing = false; // Biến đang trong quá trình vẽ đường cấm
+let algorithm = "Dijkstra"; // Biến trạng thái thuật toán tìm đường
+let selectedPoints = []; // Danh sách các điểm được chọn
+let blockedEdges = []; // Danh sách cạnh bị cấm
+let startPoint = null; //
+let temporaryLine = null; // Đường nối từ điểm cuối đến con trỏ chuột trong chế độ vẽ đường cấm
+let points = []; // Điểm
+let banPolyline = null; // Đường cấm tạm thời
+let bannedLines = []; // Biến toàn cục để xác định chế độ đặt vật cản
+let isPlacingObstacle = false; // Trạng thái đang đặt vật cản
+let obstacleMarkers = []; // Các điểm đặt vật cản
 let isAdmin = false; // Biến toàn cục để xác định chế độ Admin hay Guest
-let showNodes = false;
+let showNodes = false; // Xem tất cả các node và edge
 let showEdges = false;
+
 // Khởi tạo bản đồ
 const map = L.map("map").setView([21.0453, 105.8426], 16);
 L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
@@ -28,8 +29,17 @@ const guestControls = document.getElementById("guestControls");
 const adminControls = document.getElementById("adminControls");
 
 roleToggle.addEventListener("change", function () {
+  // Kiểm tra nếu đang vẽ đường cấm và cố gắng chuyển sang Guest
+  if (isDrawing && !this.checked) {
+    // Hiển thị thông báo
+    alert(
+      "Bạn đang trong chế độ vẽ đường cấm!\nVui lòng hoàn thành (nhấn ESC) hoặc hủy vẽ trước khi chuyển sang Guest."
+    );
+    // Giữ nguyên ở chế độ Admin
+    this.checked = true;
+    return;
+  }
   isAdmin = this.checked;
-
   if (isAdmin) {
     guestControls.classList.add("hide");
     adminControls.classList.add("show");
@@ -39,10 +49,7 @@ roleToggle.addEventListener("change", function () {
     // Reset chỉ các biến trạng thái, giữ lại đường cấm
     isBlockMode = false;
     isDrawing = false;
-    // if (temporaryLine) {
-    //   map.removeLayer(temporaryLine);
-    //   temporaryLine = null;
-    // }
+    isPlacingObstacle = false;
     startPoint = null;
   }
 });
@@ -76,7 +83,7 @@ function drawPath(path) {
 
   L.polyline(latlngs, {
     color: "green",
-    weight: 4,
+    weight: 5,
     opacity: 0.8,
   }).addTo(map);
 }
@@ -146,40 +153,18 @@ function handleBlockedEdge(edge) {
 function detectBlockedEdgesByCut(cutLine) {
   const [p1, p2] = cutLine;
   // console.log("Đang kiểm tra các cạnh bị cắt bởi đường cấm... ", adj_list.length);
-  for (let u = 0; u < adj_list.length; u++) {
-    console.log(adj_list[u].node_id);
-    const currentNodeId = adj_list[u].node_id;
+  for (let u = 0; u < adj_list_with_weights.length; u++) {
+    console.log(adj_list_with_weights[u].node_id);
+    const currentNodeId = adj_list_with_weights[u].node_id;
     const nodeU = nodes.find((n) => n.node_id === currentNodeId);
-    if (
-      !nodeU ||
-      typeof nodeU.lat !== "number" ||
-      typeof nodeU.lon !== "number" ||
-      isNaN(nodeU.lat) ||
-      isNaN(nodeU.lon)
-    ) {
-      console.warn("Thiếu dữ liệu hoặc dữ liệu không hợp lệ tại nodeV:", nodeU);
-      continue;
-    }
+
     const lat1 = nodeU.lat;
     const lon1 = nodeU.lon;
 
-    for (let v = 0; v < adj_list[u].neighbors_indices.length; v++) {
+    for (let v = 0; v < adj_list_with_weights[u].neighbors.length; v++) {
       const nodeV = nodes.find(
-        (n) => n.node_id === adj_list[u].neighbors_indices[v]
+        (n) => n.node_id === adj_list_with_weights[u].neighbors[v].node_neighbor
       );
-      if (
-        !nodeV ||
-        typeof nodeV.lat !== "number" ||
-        typeof nodeV.lon !== "number" ||
-        isNaN(nodeV.lat) ||
-        isNaN(nodeV.lon)
-      ) {
-        console.warn(
-          "Thiếu dữ liệu hoặc dữ liệu không hợp lệ tại nodeV:",
-          nodeV
-        );
-        continue;
-      }
       const edgeLine = [
         [nodeU.lat, nodeU.lon],
         [nodeV.lat, nodeV.lon],
@@ -233,14 +218,23 @@ function resetMap() {
     // Xóa các vật cản
     obstacleMarkers = [];
     isPlacingObstacle = false;
+    blockedEdges = [];
+    console.log(
+      "Đã xóa tất cả các đường cấm và vật cản.\n Blocked edges: ",
+      blockedEdges
+    );
   } else {
     map.eachLayer(function (layer) {
       if (!(layer instanceof L.TileLayer)) {
         map.removeLayer(layer);
       }
     });
+    redrawBannedLines();
+    obstacleMarkers.forEach(([marker, circle]) => {
+      // Vẽ lại điểm tâm và vòng tròn bán kính của vật cản
+      drawObstacle(marker.getLatLng(), circle.getRadius());
+    });
   }
-  blockedEdges = [];
   const placeObstacleBtn = document.getElementById("placeObstacleBtn");
   placeObstacleBtn.textContent = "Đặt vật cản";
   placeObstacleBtn.classList.remove("btn-danger");
@@ -258,6 +252,12 @@ document
 
 // Xử lý click trên bản đồ
 map.on("click", function (e) {
+  if (isAdmin && !isBlockMode && !isPlacingObstacle) {
+    alert(
+      "Chế độ Admin đang hoạt động. \n Bạn đéo thể tìm đường (theo ý giang lê)"
+    );
+    return; // Nếu là Admin thì không cho tìm đường
+  }
   // Lấy tọa độ điẻm chấm trên bản đổ
   const clickedLat = e.latlng.lat;
   const clickedLon = e.latlng.lng;
@@ -296,26 +296,13 @@ map.on("click", function (e) {
     const radius = document.getElementById("obstacleRadius").value;
     const clickedPoint = [e.latlng.lat, e.latlng.lng];
 
-    // Tạo chấm tròn điêm cấm
-    const obstacleMarker = L.circleMarker(clickedPoint, {
-      radius: 8,
-      color: "#ff0000",
-      fillColor: "#ff0000",
-      fillOpacity: 0.7,
-    }).addTo(map);
+    // Vẽ vật cản
+    const obstacles = drawObstacle(clickedPoint, radius);
 
-    // Tạo vòng tròn bán kinh bị cấm
-    const radiusCircle = L.circle(clickedPoint, {
-      radius: parseFloat(radius),
-      color: "#ff0000",
-      fillColor: "#ff0000",
-      fillOpacity: 0.1,
-      weight: 1,
-    }).addTo(map);
+    // Thêm vào danh sách quản lý
+    obstacleMarkers.push(obstacles);
 
-    // Danh sách các điểm đạt vật cản [điểm ở giữa, các điểm ảnh hưởng xung quanh]
-    obstacleMarkers.push([obstacleMarker, radiusCircle]);
-    // Xử lý khi đặt vật cản
+    // Xử lý các cạnh bị chặn
     detectBlockedEdgesByObstacle(clickedPoint, radius);
     return;
   }
@@ -334,7 +321,12 @@ map.on("click", function (e) {
   });
 
   if (!closestNode) return;
-
+  // Kiểm tra số điểm đã chọn
+  if (selectedPoints.length >= 2) {
+    alert("Đã có 2 điểm! Reset để tìm đường mới");
+    console.log("Chỉ được chọn 2 điểm để tìm đường.");
+    return;
+  }
   if (selectedPoints.length < 2) {
     // Thêm diểm vào selectdPoints
     selectedPoints.push(closestNode.node_id);
@@ -361,7 +353,7 @@ map.on("click", function (e) {
         .then((data) => {
           if (data.path) {
             drawPath(data.path);
-            selectedPoints = [];
+            // selectedPoints = [];
           } else {
             alert(data.error || "Không tìm thấy đường đi.");
           }
@@ -374,51 +366,77 @@ map.on("click", function (e) {
   }
 });
 
-// Xử lý các cạnh bị vật cản chắn
+function drawObstacle(clickedPoint, radius) {
+  // Tạo chấm tròn điểm cấm (điểm tâm)
+  const obstacleMarker = L.circleMarker(clickedPoint, {
+    radius: 8,
+    color: "#ff0000",
+    fillColor: "#ff0000",
+    fillOpacity: 0.7,
+  }).addTo(map);
+
+  // Tạo vòng tròn bán kính vùng cấm
+  const radiusCircle = L.circle(clickedPoint, {
+    radius: parseFloat(radius),
+    color: "#ff0000",
+    fillColor: "#ff0000",
+    fillOpacity: 0.1,
+    weight: 1,
+  }).addTo(map);
+
+  // Trả về cả 2 marker để quản lý
+  return [obstacleMarker, radiusCircle];
+}
+
 function detectBlockedEdgesByObstacle(clickedPoint, radius) {
-  adj_list.forEach((nodeU) => {
-    const u = nodeU.node_id;
+  adj_list_with_weights.forEach((node) => {
+    const u = node.node_id;
 
     // Tìm nodeU trong mảng nodes
     const nodeUObj = nodes.find((n) => n.node_id === u);
     if (!nodeUObj) {
       console.error(`Không tìm thấy node với id ${u}`);
-      return; // Nếu không tìm thấy, bỏ qua node này
+      return;
     }
+
     const latU = nodeUObj.lat;
     const lonU = nodeUObj.lon;
 
-    nodeU.neighbors_indices.forEach((v) => {
-      if (u < v) {
-        // Tránh xét trùng các cạnh
-        const nodeVObj = nodes.find((n) => n.node_id === v);
-        if (!nodeVObj) {
-          console.error(`Không tìm thấy node với id ${v}`);
-          return; // Nếu không tìm thấy, bỏ qua node này
-        }
-        const latV = nodeVObj.lat;
-        const lonV = nodeVObj.lon;
+    // Duyệt qua các neighbors có weight
+    node.neighbors.forEach((neighborInfo) => {
+      const v = neighborInfo.node_neighbor; // Lấy node_id của neighbor
+      const weight = neighborInfo.weight; // Lấy weight của cạnh
 
-        const edgeMidpoint = [(latU + latV) / 2, (lonU + lonV) / 2];
+      const nodeVObj = nodes.find((n) => n.node_id === v);
+      if (!nodeVObj) {
+        console.error(`Không tìm thấy node với id ${v}`);
+        return;
+      }
+      const latV = nodeVObj.lat;
+      const lonV = nodeVObj.lon;
 
-        const distance = getDistance(
-          clickedPoint[0],
-          clickedPoint[1],
-          edgeMidpoint[0],
-          edgeMidpoint[1]
-        );
+      // Tính điểm giữa của cạnh
+      const edgeMidpoint = [(latU + latV) / 2, (lonU + lonV) / 2];
 
-        if (distance <= radius) {
-          if (!isEdgeBlocked([u, v])) {
-            blockedEdges.push([u, v]);
-            console.log(`🚫 Cạnh bị chặn bởi vật cản: ${u} - ${v}`);
-          }
+      // Tính khoảng cách từ vật cản đến điểm giữa cạnh
+      const distance = getDistance(
+        clickedPoint[0],
+        clickedPoint[1],
+        edgeMidpoint[0],
+        edgeMidpoint[1]
+      );
+      // Nếu khoảng cách nhỏ hơn hoặc bằng bán kính vật cản
+      if (distance <= radius) {
+        if (!isEdgeBlocked([u, v])) {
+          blockedEdges.push([u, v]);
+          console.log(
+            `🚫 Cạnh bị chặn bởi vật cản: ${u} - ${v} (weight: ${weight})`
+          );
         }
       }
     });
   });
 }
-
 // Xử lý di chuyển chuột
 map.on("mousemove", function (e) {
   if (isBlockMode && isDrawing) {
@@ -599,4 +617,5 @@ function togglePaths() {}
 document
   .getElementById("togglePaths")
   .addEventListener("click", () => togglePaths());
+
 // Xử lý tắc đường
