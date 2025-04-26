@@ -13,7 +13,6 @@ adj_dict = {}
 with open(edges_file, 'r') as f:
     reader = csv.reader(f)
     header = next(reader)
-
     for row in reader:
         try:
             node = int(row[0])
