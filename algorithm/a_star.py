@@ -4,7 +4,7 @@ import heapq
 # import math
 import csv
 
-nodes_file = "data/nodes.csv"
+nodes_file = "data/fileCSV/nodes.csv"
 def astar(adj_list, source, destination, num_iterations):
     def euclidean_distance(node1, node2):
         # euclidean heuristic
