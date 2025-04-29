@@ -44,7 +44,6 @@ with open(edges_file, 'r') as f:
         except Exception as e:
             print(f"Lỗi khi xử lý node {row[0]}: {e}")
             continue
-
 print(f"Đã đọc được {len(adj_dict)} nodes từ adj_list")
 
 # Flask app
@@ -56,29 +55,51 @@ adj_list = adj_dict  # Gán đồ thị gốc
 @app.route('/find_path', methods=['POST'])
 def find_path():
     data = request.get_json()
-    print(f"Received data: {data}")
-    if 'start' not in data or 'end' not in data:
-        return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
 
+    # lấy dữ liệu từ request
     start = int(data['start'])
     end = int(data['end'])
     num_iterations = int(data.get('iterations', 10))
     blocked_edges = data.get('blocked_edges', [])
     algorithm = data.get('algorithm', 'A*')
+    trafic_edges = data.get('traffic_edges', [])
+    trafic_level = data.get('traffic_level', 0)
 
-    print(f"\n=== Finding path from {start} to {end} ===")
-    print(f"Algorithm: {algorithm}")
-    
+     # kiểm tra điều kiện đầu vào 
+    if 'start' not in data or 'end' not in data:
+        return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
     if start not in adj_list or end not in adj_list:
         return jsonify({"error": f"Invalid 'start' or 'end' node. {start} or {end} not found in the graph."}), 400
+    
+    
+    # Kiểm tra nếu start hoặc end nằm trong các cạnh bị cấm
+    for edge in blocked_edges:
+        if len(edge) != 2:
+            continue
+        u, v = edge
+        # Kiểm tra nếu start hoặc end là một phần của cạnh bị cấm
+        if start == u and end == v or start == v and end == u:
+            return jsonify({"error": f"💀Vị trí bạn chọn nằm trong vùng cấm!!!\nVui lòng chọn lại vị trí"}), 400
 
+
+
+    print(f"Received data: {data}")
+    # Kiểm tra dữ liệu đầu vào 
+    print(f"\n=== Finding path from {start} to {end} ===")
+    print(f"Algorithm: {algorithm}")
+    print(f"Number Blocked edges: {len(blocked_edges)}")
+    print(f"Number Traffic edges: {len(trafic_edges)}")
+    print(f"Traffic level: {trafic_level}")
+    print(f"Number of iterations: {num_iterations}")
+
+
+   
     try:
         # Tạo bản sao đồ thị và xóa các cạnh bị cấm
         from copy import deepcopy
         adj_list_filtered = deepcopy(adj_list)
-        print(f"Blocked edges: {blocked_edges}")
 
-        # Xử lý các cạnh bị cấm
+        #------------------------------- Xử lý các cạnh bị cấm --------------------------------#     
         for edge in blocked_edges:
             if len(edge) != 2:
                 continue
@@ -97,6 +118,20 @@ def find_path():
                 if u in adj_list_filtered[v]:
                     adj_list_filtered[v].remove(u)
 
+        #------------------------------- Xử lý các cạnh tắc --------------------------------#
+        for edge in trafic_edges:
+            if len(edge) != 2:
+                continue
+            u, v = edge
+            # Kiểm tra xem cạnh có tồn tại trong đồ thị không
+            if u in adj_list_filtered and v in adj_list_filtered[u]:
+                # Cập nhật trọng số của cạnh
+                adj_list_filtered[u][v] *= int(trafic_level)
+            if v in adj_list_filtered and u in adj_list_filtered[v]:
+                # Cập nhật trọng số của cạnh theo chiều ngược lại
+                adj_list_filtered[v][u] *= int(trafic_level)
+
+    
         algorithms = {
             'A Star': astar,
             'Dijkstra': dijkstra,
@@ -107,9 +142,11 @@ def find_path():
         if algorithm in algorithms:
             path, explored_nodes = algorithms[algorithm](adj_list_filtered, start, end, num_iterations)
             list_explore_node = list(explored_nodes)
-            
+            print("\n✅List of explored nodes:")
+            print(list_explore_node)
+
             if path:
-                print("✅ Path found:", path)
+                print("\n✅ Path found:", path)
                 list_explore_node.insert(0, start)
                 list_explore_node.append(end)
                 return jsonify({
@@ -124,8 +161,9 @@ def find_path():
             return jsonify({"error": "Invalid algorithm specified."}), 400
 
     except Exception as e:
-        print(f"❌ Error during pathfinding: {e}")
-        return jsonify({"error": f"Error during pathfinding: {str(e)}"}), 500
+        print(f"❌ Không tìm thấy đường đi")
+        return jsonify({"error": "❌ Không tìm thấy đường đi"}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
