@@ -135,6 +135,118 @@
       background-color: #87929a;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+    /* CSS cho Admin Control Panel */
+    .admin-control-panel {
+      display: none;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background-color: #f8f9fa; /* Màu nền nhạt */
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3); /* Hiệu ứng đổ bóng */
+      width: 350px;
+      font-family: 'Arial', sans-serif;
+      border: 2px solid #007bff; /* Viền màu xanh */
+    }
+
+    .admin-control-panel .control-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #007bff;
+    }
+
+    .admin-control-panel .hide-panel-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .admin-control-panel .main-option {
+      margin-bottom: 15px;
+    }
+
+    .admin-control-panel .sub-options {
+      margin-top: 10px;
+      padding-left: 10px;
+    }
+
+    .admin-control-panel .btn {
+      display: block;
+      width: 100%;
+      padding: 10px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .admin-control-panel .btn-warning {
+      background-color: #ffc107;
+      color: #212529;
+    }
+
+    .admin-control-panel .btn-warning:hover {
+      background-color: #e0a800;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-control-panel .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .admin-control-panel .btn-primary:hover {
+      background-color: #0056b3;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-control-panel .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .admin-control-panel .btn-success:hover {
+      background-color: #218838;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-control-panel .btn-info {
+      background-color: #17a2b8;
+      color: white;
+    }
+
+    .admin-control-panel .btn-info:hover {
+      background-color: #117a8b;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-control-panel .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .admin-control-panel .btn-danger:hover {
+      background-color: #c82333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-control-panel #banEdgeStatus {
+      margin-top: 10px;
+      font-size: 90%;
+      color: #17a2b8;
+    }
   </style>
 </head>
 <body>
@@ -154,8 +266,44 @@
   <button id="toggleNodes" class="btn btn-primary btn-block">Toggle Nodes</button>
   <button id="togglePaths" class="btn btn-secondary btn-block">Toggle Paths</button>
   <button id="resetButton" class ="resetButton">Reset</button>
-</div>                              
+</div>                      
+<!-- Admin Control Panel -->        
+<div class="admin-control-panel" id="adminControlPanel">
+    <div class="control-panel-header">
+        <span>Quản lý cấm</span>
+        <button class="hide-panel-btn" id="hidePanelBtn" title="Ẩn panel">&times;</button>
+    </div>
+    <!-- Cấm đường -->
+    <div class="main-option">
+        <button id="toggleBanEdge" class="btn btn-warning btn-block btn-sm">Cấm đường</button>
+        <div id="banEdgeOptions" class="sub-options" style="display: none;">
+            <label><input type="radio" name="direction" value="both" checked> 2 chiều</label>
+            <label><input type="radio" name="direction" value="one-way"> 1 chiều (đầu→cuối)</label>
+            <button id="banEdgeBtn" class="btn btn-primary btn-sm my-1">Bật chế độ cấm đường</button>
+            <button id="restoreBanBtn" class="btn btn-success btn-sm my-1">Khôi phục đoạn vừa cấm</button>
+        </div>
+    </div>
+    <!-- Cấm vùng -->
+    <div class="main-option">
+        <button id="toggleBanArea" class="btn btn-warning btn-block btn-sm">Cấm vùng</button>
+        <div id="banAreaOptions" class="sub-options" style="display: none;">
+            <button id="banAreaBtn" class="btn btn-primary btn-sm my-1">Bật chế độ cấm vùng</button>
+            <button id="sendAreaBtn" class="btn btn-info btn-sm my-1">Gửi vùng cấm</button>
+            <button id="restoreBanAreaBtn" class="btn btn-success btn-sm my-1">Khôi phục vùng vừa cấm</button>
+        </div>
+    </div>
+    <!-- Tắc đường -->
+    <div class="main-option">
+        <button id="toggleTacEdge" class="btn btn-warning btn-block btn-sm">Tắc đường</button>
+        <div id="tacEdgeOptions" class="sub-options" style="display: none;">
+            <label>Hệ số tắc: <input type="number" id="tacFactor" value="5" min="2" max="20" style="width:50px"></label>
+            <button id="tacEdgeBtn" class="btn btn-primary btn-sm my-1">Bật chế độ tắc đường</button>
+            <button id="restoreTacBtn" class="btn btn-success btn-sm my-1">Khôi phục đoạn tắc vừa đánh dấu</button>
+        </div>
+    </div>
 
+    <div id="banEdgeStatus" class="mt-2 text-info" style="font-size: 90%"></div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="data/nodes.js"></script>
@@ -182,12 +330,17 @@
           const controlpanel = document.getElementById("control-panel");
           controlpanel.style.display = isAdmin ? "none" : "inline-block";
           // Ví dụ: bật tính năng chỉ dành cho Admin
+          const adminControlpanel = document.getElementById("adminControlPanel");
+          adminControlpanel.style.display = isAdmin ? "block" : "none";
         } else {
           console.log("Chuyển sang chế độ Guest");
           isBlockMode = false;
           // Ví dụ: ẩn các công cụ Admin
           const controlpanel = document.getElementById("control-panel");
           controlpanel.style.display = isAdmin ? "none" : "inline-block";
+
+          const adminControlpanel = document.getElementById("adminControlPanel");
+          adminControlpanel.style.display = isAdmin ? "block" : "none";
         }
     }
   // Gán sự kiện click
@@ -205,6 +358,101 @@
       }
     });
   });
+  // Lắng nghe sự kiện click trên các nút trong Admin Control Panel
+document.addEventListener("DOMContentLoaded", function () {
+  // Nút Ẩn Panel
+  const hidePanelBtn = document.getElementById("hidePanelBtn");
+  const controlPanel = document.getElementById("controlPanel");
+  const showPanelBtn = document.getElementById("toggleBtn");
+
+  hidePanelBtn.addEventListener("click", function () {
+    controlPanel.style.display = "none";
+    showPanelBtn.style.display = "block";
+  });
+
+  // Nút Hiện Panel
+  showPanelBtn.addEventListener("click", function () {
+    controlPanel.style.display = "block";
+    showPanelBtn.style.display = "none";
+  });
+
+  // Nút Cấm đường
+  const toggleBanEdge = document.getElementById("toggleBanEdge");
+  const banEdgeOptions = document.getElementById("banEdgeOptions");
+
+  toggleBanEdge.addEventListener("click", function () {
+    banEdgeOptions.style.display =
+      banEdgeOptions.style.display === "none" ? "block" : "none";
+  });
+
+  // Nút Cấm vùng
+  const toggleBanArea = document.getElementById("toggleBanArea");
+  const banAreaOptions = document.getElementById("banAreaOptions");
+
+  toggleBanArea.addEventListener("click", function () {
+    banAreaOptions.style.display =
+      banAreaOptions.style.display === "none" ? "block" : "none";
+  });
+
+  // Nút Tắc đường
+  const toggleTacEdge = document.getElementById("toggleTacEdge");
+  const tacEdgeOptions = document.getElementById("tacEdgeOptions");
+
+  toggleTacEdge.addEventListener("click", function () {
+    tacEdgeOptions.style.display =
+      tacEdgeOptions.style.display === "none" ? "block" : "none";
+  });
+
+  // Nút Bật chế độ cấm đường
+  const banEdgeBtn = document.getElementById("banEdgeBtn");
+  banEdgeBtn.addEventListener("click", function () {
+    console.log("Bật chế độ cấm đường");
+    alert("Chế độ cấm đường đã được bật!");
+  });
+
+  // Nút Khôi phục đoạn vừa cấm
+  const restoreBanBtn = document.getElementById("restoreBanBtn");
+  restoreBanBtn.addEventListener("click", function () {
+    console.log("Khôi phục đoạn vừa cấm");
+    alert("Đoạn vừa cấm đã được khôi phục!");
+  });
+
+  // Nút Bật chế độ cấm vùng
+  const banAreaBtn = document.getElementById("banAreaBtn");
+  banAreaBtn.addEventListener("click", function () {
+    console.log("Bật chế độ cấm vùng");
+    alert("Chế độ cấm vùng đã được bật!");
+  });
+
+  // Nút Gửi vùng cấm
+  const sendAreaBtn = document.getElementById("sendAreaBtn");
+  sendAreaBtn.addEventListener("click", function () {
+    console.log("Gửi vùng cấm");
+    alert("Vùng cấm đã được gửi!");
+  });
+
+  // Nút Khôi phục vùng vừa cấm
+  const restoreBanAreaBtn = document.getElementById("restoreBanAreaBtn");
+  restoreBanAreaBtn.addEventListener("click", function () {
+    console.log("Khôi phục vùng vừa cấm");
+    alert("Vùng vừa cấm đã được khôi phục!");
+  });
+
+  // Nút Bật chế độ tắc đường
+  const tacEdgeBtn = document.getElementById("tacEdgeBtn");
+  tacEdgeBtn.addEventListener("click", function () {
+    const tacFactor = document.getElementById("tacFactor").value;
+    console.log(`Bật chế độ tắc đường với hệ số tắc: ${tacFactor}`);
+    alert(`Chế độ tắc đường đã được bật với hệ số tắc: ${tacFactor}`);
+  });
+
+  // Nút Khôi phục đoạn tắc vừa đánh dấu
+  const restoreTacBtn = document.getElementById("restoreTacBtn");
+  restoreTacBtn.addEventListener("click", function () {
+    console.log("Khôi phục đoạn tắc vừa đánh dấu");
+    alert("Đoạn tắc vừa đánh dấu đã được khôi phục!");
+  });
+});
   // Gán sự kiện thay đổi thuật toán
   function handleAlgorithmChange() {
     algorithm = document.getElementById("algorithmSelect").value;
