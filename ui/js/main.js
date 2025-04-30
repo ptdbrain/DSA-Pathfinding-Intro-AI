@@ -49,8 +49,8 @@ roleToggle.addEventListener("change", function () {
   }
   isAdmin = this.checked;
   if (isAdmin) {
-    guestControls.classList.add("hide");
-    adminControls.classList.add("show");
+    guestControls.classList.add("hide");  // Ẩn các điều khiển Guest
+    adminControls.classList.add("show");  // Hiện các điều khiển Admin
     resetMapWithGuest(); // Reset bản đồ khi chuyển sang Admin
   } else {
     guestControls.classList.remove("hide");
@@ -72,15 +72,15 @@ const googleIcon = L.icon({
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
 });
-document.getElementById("toggleNodes").addEventListener("click", () => {
+document.getElementById("toggleNodes").addEventListener("click", () => {  
   if (!showNodes) {
     nodeMarkers = nodes.map((n) => {
-      const marker = L.marker([n.lat, n.lon], { icon: googleIcon }).addTo(map);
+      const marker = L.marker([n.lat, n.lon], { icon: googleIcon }).addTo(map); // Tạo marker cho mỗi node
       return marker;
     });
   } else {
     // Ẩn các node
-    nodeMarkers.forEach((marker) => map.removeLayer(marker));
+    nodeMarkers.forEach((marker) => map.removeLayer(marker)); // Xóa các marker khỏi bản đồ
     nodeMarkers = [];
   }
 
@@ -88,21 +88,21 @@ document.getElementById("toggleNodes").addEventListener("click", () => {
 });
 
 /*----------------------------------- Hiện đường đi trên bản đổ --------------------------------*/
-document.getElementById("togglePaths").addEventListener("click", () => {
+document.getElementById("togglePaths").addEventListener("click", () => {  // Hiện đường đi
   if (!showEdges) {
-    for (let i = 0; i < adj_list_with_weights.length; i++) {
+    for (let i = 0; i < adj_list_with_weights.length; i++) {  // Duyệt qua danh sách các node
       const nodeU = nodes.find(
-        (n) => n.node_id === adj_list_with_weights[i].node_id
+        (n) => n.node_id === adj_list_with_weights[i].node_id // Tìm node trong danh sách nodes
       );
-      for (let u = 0; u < adj_list_with_weights[i].neighbors.length; u++) {
+      for (let u = 0; u < adj_list_with_weights[i].neighbors.length; u++) { // Duyệt qua các neighbors của node
         const nodeV = nodes.find(
           (n) =>
-            n.node_id === adj_list_with_weights[i].neighbors[u].node_neighbor
+            n.node_id === adj_list_with_weights[i].neighbors[u].node_neighbor // Tìm node trong danh sách nodes
         );
         const latlngs = [
-          [nodeU.lat, nodeU.lon],
+          [nodeU.lat, nodeU.lon], // Tọa độ của nodeU
           [nodeV.lat, nodeV.lon],
-        ];
+        ];  // Tọa độ của nodeV
 
         L.polyline(latlngs, {
           color: "green",
@@ -675,7 +675,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 function segmentsIntersect(p1, p2, q1, q2, epsilon) {
   function ccw(a, b, c) {
-    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]); // Kiểm tra ccw
   }
 
   function pointSegmentDistance(p, a, b) {
@@ -683,8 +683,8 @@ function segmentsIntersect(p1, p2, q1, q2, epsilon) {
     let l2 = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
     if (l2 === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]); // a==b
     let t =
-      ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / l2;
-    t = Math.max(0, Math.min(1, t));
+      ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / l2;   // Tính t
+    t = Math.max(0, Math.min(1, t));  // Clamp t to [0, 1]
     let projection = [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
     return Math.hypot(p[0] - projection[0], p[1] - projection[1]);
   }
@@ -762,7 +762,7 @@ function distanceToLine(point, lineStart, lineEnd) {
 function isEdgeNearLine(edgeStart, edgeEnd, lineStart, lineEnd, threshold) {
   const d1 = distanceToLine(edgeStart, lineStart, lineEnd);
   const d2 = distanceToLine(edgeEnd, lineStart, lineEnd);
-  const d3 = distanceToLine(lineStart, edgeStart, edgeEnd);
+  const d3 = distanceToLine(lineStart, edgeStart, edgeEnd);   
   const d4 = distanceToLine(lineEnd, edgeStart, edgeEnd);
   return Math.min(d1, d2, d3, d4) < threshold;
 }
