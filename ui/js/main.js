@@ -34,6 +34,25 @@ const roleToggle = document.getElementById("roleToggle");
 const guestControls = document.getElementById("guestControls");
 const adminControls = document.getElementById("adminControls");
 
+// ----------------------
+// Xử lý đổi giao diện theme
+document.querySelector('.theme-toggle-btn').addEventListener('click', function () {
+  this.classList.toggle('active');
+});
+
+function switchTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.classList.remove('theme-dark', 'theme-sunset');
+    document.documentElement.classList.add('theme-light');
+  } else if (theme === 'dark') {
+    document.documentElement.classList.remove('theme-light', 'theme-sunset');
+    document.documentElement.classList.add('theme-dark');
+  } else if (theme === 'sunset') {
+    document.documentElement.classList.remove('theme-light', 'theme-dark');
+    document.documentElement.classList.add('theme-sunset');
+  }
+}
+
 /* Xử lý chọn chế độ Guest - Admin */
 roleToggle.addEventListener("change", function () {
   console.log("Bạn đang ở chế độ ", roleToggle.value);
@@ -219,7 +238,7 @@ map.on("click", function (e) {
       selectedPoints.push(closestNode.node_id);
       console.log(selectedPoints);
       L.circleMarker([closestNode.lat, closestNode.lon], {
-        radius: 6,
+        radius: 5,
         color: "red",
         fillColor: "red",
         fillOpacity: 1,
@@ -716,7 +735,7 @@ function drawPath(path) {
 
   L.polyline(latlngs, {
     color: "green",
-    weight: 5,
+    weight: 3,
     opacity: 0.8,
   }).addTo(map);
 }

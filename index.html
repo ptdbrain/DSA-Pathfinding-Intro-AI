@@ -20,12 +20,13 @@
     <!-- Control Panel -->
     <div class="control-panel" id="control-panel">
       <!-- Panel Header với Toggle Switch -->
-      <div class="panel-header">
-        <div class="toggle-switch">
-          <input type="checkbox" id="roleToggle" class="toggle-input" />
-          <label for="roleToggle" class="toggle-slider"></label>
-        </div>
+    <div class="panel-header">
+      <!-- Toggle Guest/Admin -->
+      <div class="toggle-switch">
+        <input type="checkbox" id="roleToggle" class="toggle-input" />
+        <label for="roleToggle" class="toggle-slider"></label>
       </div>
+    </div>
 
       <!-- Guest Controls - Phần điều khiển cho người dùng thông thường -->
       <div class="guest-controls" id="guestControls">
@@ -37,6 +38,9 @@
             <option value="A Star">A Star</option>
             <option value="BFS">BFS</option>
             <option value="DFS">DFS</option>
+            <option value="Greedy Best First">Greedy Best First Search</option>
+            <option value="Iterative Deepening DFS">Iterative Deepening DFS</option>
+            <option value="Uniform Cost Search">Uniform Cost Search</option>
           </select>
           <button id="toggleNodes" class="btn btn-primary">
             Hiển thị Node
@@ -102,6 +106,17 @@
         </div>
       </div>
     </div>
+
+    <div class="theme-toggle-btn">
+      <i class="fa fa-cogs"></i>
+    </div>
+
+    <div class="theme-dropdown">
+      <button class="theme-selector" onclick="switchTheme('light')">Light Mode</button>
+      <button class="theme-selector" onclick="switchTheme('dark')">Dark Mode</button>
+      <button class="theme-selector" onclick="switchTheme('sunset')">Sunset Mode</button>
+    </div>
+
 
     <!-- Import JavaScript Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>

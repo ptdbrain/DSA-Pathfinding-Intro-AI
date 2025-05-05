@@ -5,7 +5,9 @@ from algorithm.a_star import astar
 from algorithm.dijkstra import dijkstra
 from algorithm.bfs import bfs
 from algorithm.dfs import dfs
-
+from algorithm.greedy_best_first import greedy_best_first
+from algorithm.iterative_deepening_dfs import iddfs
+from algorithm.uniform_cost_search import uniform_cost_search
 
 edges_file = 'data/fileCsv/adj_list_with_weights.csv'
 adj_dict = {}
@@ -30,7 +32,7 @@ with open(edges_file, 'r') as f:
                     neighbors[int(neighbor_id)] = float(weight)
             except:
                 raw = raw_text.replace('[', '').replace(']', '').replace('np.float64', '') \
-                              .replace('(', '').replace(')', '')
+                                .replace('(', '').replace(')', '')
                 parts = raw.split(',')
 
                 for i in range(0, len(parts) - 1, 2):
@@ -65,7 +67,7 @@ def find_path():
     trafic_edges = data.get('traffic_edges', [])
     trafic_level = data.get('traffic_level', 0)
 
-     # kiểm tra điều kiện đầu vào 
+    # kiểm tra điều kiện đầu vào 
     if 'start' not in data or 'end' not in data:
         return jsonify({"error": "Missing 'start' or 'end' node in request data"}), 400
     if start not in adj_list or end not in adj_list:
@@ -91,9 +93,6 @@ def find_path():
     print(f"Number Traffic edges: {len(trafic_edges)}")
     print(f"Traffic level: {trafic_level}")
     print(f"Number of iterations: {num_iterations}")
-
-
-   
     try:
         # Tạo bản sao đồ thị và xóa các cạnh bị cấm
         from copy import deepcopy
@@ -136,7 +135,10 @@ def find_path():
             'A Star': astar,
             'Dijkstra': dijkstra,
             'BFS': bfs,
-            'DFS': dfs
+            'DFS': dfs,
+            'Greedy Best First' : greedy_best_first,
+            'Iterative Deepening DFS' : iddfs,
+            'Uniform Cost Search' : uniform_cost_search,
         }
 
         if algorithm in algorithms:
