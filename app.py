@@ -125,10 +125,10 @@ def find_path():
             # Kiểm tra xem cạnh có tồn tại trong đồ thị không
             if u in adj_list_filtered and v in adj_list_filtered[u]:
                 # Cập nhật trọng số của cạnh
-                adj_list_filtered[u][v] *= int(trafic_level)
+                adj_list_filtered[u][v] *= int(trafic_level * trafic_level)
             if v in adj_list_filtered and u in adj_list_filtered[v]:
                 # Cập nhật trọng số của cạnh theo chiều ngược lại
-                adj_list_filtered[v][u] *= int(trafic_level)
+                adj_list_filtered[v][u] *= int(trafic_level * trafic_level)
 
     
         algorithms = {

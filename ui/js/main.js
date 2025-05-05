@@ -22,6 +22,8 @@ let trafficPolyline = null; // Biến toàn cục để lưu polyline tắc đư
 let isTrafficMode = false; // Biến toàn cục để xác định chế độ tắc đường
 let trafficLine = [];
 let trafficEdges = []; // Biến toàn cục để lưu các cạnh tắc đường
+
+let algorithmSelect = document.getElementById("algorithmSelect"); 
 // Khởi tạo bản đồ
 const map = L.map("map").setView([21.0453, 105.8426], 16);
 L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
@@ -36,20 +38,22 @@ const adminControls = document.getElementById("adminControls");
 
 // ----------------------
 // Xử lý đổi giao diện theme
-document.querySelector('.theme-toggle-btn').addEventListener('click', function () {
-  this.classList.toggle('active');
-});
+document
+  .querySelector(".theme-toggle-btn")
+  .addEventListener("click", function () {
+    this.classList.toggle("active");
+  });
 
 function switchTheme(theme) {
-  if (theme === 'light') {
-    document.documentElement.classList.remove('theme-dark', 'theme-sunset');
-    document.documentElement.classList.add('theme-light');
-  } else if (theme === 'dark') {
-    document.documentElement.classList.remove('theme-light', 'theme-sunset');
-    document.documentElement.classList.add('theme-dark');
-  } else if (theme === 'sunset') {
-    document.documentElement.classList.remove('theme-light', 'theme-dark');
-    document.documentElement.classList.add('theme-sunset');
+  if (theme === "light") {
+    document.documentElement.classList.remove("theme-dark", "theme-sunset");
+    document.documentElement.classList.add("theme-light");
+  } else if (theme === "dark") {
+    document.documentElement.classList.remove("theme-light", "theme-sunset");
+    document.documentElement.classList.add("theme-dark");
+  } else if (theme === "sunset") {
+    document.documentElement.classList.remove("theme-light", "theme-dark");
+    document.documentElement.classList.add("theme-sunset");
   }
 }
 
@@ -263,35 +267,7 @@ map.on("click", function (e) {
 
     // Chạy thuật toán tìm đường đi
     if (selectedPoints.length === 2) {
-      fetch("http://127.0.0.1:5000/find_path", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start: selectedPoints[0],
-          end: selectedPoints[1],
-          blocked_edges: blockedEdges,
-          algorithm: document.getElementById("algorithmSelect").value,
-          // Đường tắc
-          traffic_edges: trafficEdges,
-          // Hệ số tắc đường
-          traffic_level: trafficLevel,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.path) {
-            // exploredNodes = data.explored_nodes;
-            // highlightExploredNodes(exploredNodes, () => drawPath(data.path));
-            // // selectedPoints = [];
-            drawPath(data.path);
-          } else {
-            alert(data.error || "Không tìm thấy đường đi.");
-          }
-        })
-        .catch((err) => {
-          console.error("Lỗi:", err);
-          alert("12");
-        });
+      findAndDrawPath();
     }
   }
 });
@@ -397,6 +373,61 @@ document.addEventListener("keydown", function (e) {
     }
   }
 });
+
+// Hàm truyền đối số cho backend
+function findAndDrawPath() {
+  fetch("http://127.0.0.1:5000/find_path", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: selectedPoints[0], // Điểm khởi đầu
+      end: selectedPoints[1], // Điểm kết thúc
+      blocked_edges: blockedEdges, // Đường cấm
+      algorithm: algorithm, // Thuật toán
+      traffic_edges: trafficEdges, // Đường tắc
+      traffic_level: trafficLevel, // Hệ số tắc đường
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.path) {
+        // -- Vẽ đường đi cho Gle
+        // exploredNodes = data.explored_nodes;
+        // highlightExploredNodes(exploredNodes, () => drawPath(data.path));
+        // // selectedPoints = [];
+        drawPath(data.path);
+      } else {
+        alert(data.error || "Không tìm thấy đường đi.");
+      }
+    })
+    .catch((err) => {
+      console.error("Lỗi:", err);
+      alert("12");
+    });
+}
+
+// ----------------------------------- Xử lý thuật toán ------------------------------
+algorithmSelect.addEventListener("change", function () {
+  algorithm = this.value;
+  alert(
+    "Thuật toán đã được chọn: " +
+      algorithm +
+      "\n Chúng tôi sẽ làm mới đường đi cho bạn 🤖"
+  );
+  getAlgorithm();
+});
+function getAlgorithm() {
+  map.eachLayer(function (layer) {
+    if (
+      layer instanceof L.Polyline && // Là Polyline
+      !(layer instanceof L.TileLayer) && // Không phải TileLayer
+      layer.options.color === "green" // Có màu xanh
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+  findAndDrawPath();
+}
 
 /*---------------------------------------------------- Xử lý tắc đường ---------------------------*/
 document.getElementById("trafficBtn").addEventListener("click", function () {
@@ -828,7 +859,6 @@ function detectBlockedEdgesByCut(cutLine) {
     }
   }
 }
-
 
 // /*---------------------------  Hiệu ứng duyệt qua các node  ----------------------------------------*/
 // let exploredNodes = []; // Danh sách lưu các marker đã vẽ
