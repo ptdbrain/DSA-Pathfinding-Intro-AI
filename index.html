@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bản đồ với Node</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Import thư viện Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+    />
+    <!-- Import CSS tùy chỉnh -->
+    <link rel="stylesheet" href="ui/css/styles.css" />
+  </head>
+
+  <body>
+    <!-- Container cho bản đồ -->
+    <div id="map"></div>
+
+    <!-- Control Panel -->
+    <div class="control-panel" id="control-panel">
+      <!-- Panel Header với Toggle Switch -->
+      <div class="panel-header">
+        <div class="toggle-switch">
+          <input type="checkbox" id="roleToggle" class="toggle-input" />
+          <label for="roleToggle" class="toggle-slider"></label>
+        </div>
+      </div>
+
+      <!-- Guest Controls - Phần điều khiển cho người dùng thông thường -->
+      <div class="guest-controls" id="guestControls">
+        <div class="panel-section">
+          <h5>Tìm đường</h5>
+          <label for="algorithmSelect">Chọn thuật toán:</label>
+          <select id="algorithmSelect" class="algorithm-select">
+            <option value="Dijkstra">Dijkstra</option>
+            <option value="A Star">A Star</option>
+            <option value="BFS">BFS</option>
+            <option value="DFS">DFS</option>
+          </select>
+          <button id="toggleNodes" class="btn btn-primary">
+            Hiển thị Node
+          </button>
+          <button id="togglePaths" class="btn btn-secondary">
+            Hiển thị đường đi
+          </button>
+          <button id="guestResetButton" class="btn btn-danger">Làm mới</button>
+        </div>
+      </div>
+
+      <!-- Admin Controls - Phần điều khiển cho admin -->
+      <div class="admin-controls" id="adminControls">
+        <div class="panel-section">
+          <h5>Quản lý đường đi</h5>
+          <!-- Phần cấm đường -->
+          <div class="control-group">
+            <button id="banEdgeBtn" class="btn btn-warning">
+              Bắt đầu cấm đường
+            </button>
+            <div class="radio-group">
+            <button id="restoreBanBtn" class="btn btn-success">
+              Khôi phục đoạn vừa cấm
+            </button>
+          </div>
+
+          <!-- Thêm phần đặt vật cản -->
+          <div class="control-group">
+            <button id="placeObstacleBtn" class="btn btn-warning">
+              Đặt vật cản
+            </button>
+            <div class="input-group">
+              <label
+                >Bán kính ảnh hưởng (m):
+                <input
+                  type="number"
+                  id="obstacleRadius"
+                  value="50"
+                  min="10"
+                  max="200"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Phần tắc đường -->
+          <div class="control-group">
+            <button id="trafficBtn" class="btn btn-warning">
+              Bắt đầu đánh dấu tắc đường
+            </button>
+            <div class="input-group">
+              <label
+                >Hệ số tắc:
+                <input type="number" id="trafficLevel" value="5" min="2" max="20"
+              /></label>
+            </div>
+            <button id="restoreTacBtn" class="btn btn-success">
+              Khôi phục đoạn tắc
+            </button>
+          </div>
+
+          <button id="adminResetButton" class="btn btn-danger">Làm mới</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import JavaScript Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="data/fileJs/nodes.js"></script>
+    <script src="data/fileJs/adj_list.js"></script>
+    <script src="data/fileJs/adj_list_with_weights.js"></script>
+    <!-- Import JavaScript tùy chỉnh -->
+    <script src="ui/js/main.js"></script>
+  </body>
+</html>

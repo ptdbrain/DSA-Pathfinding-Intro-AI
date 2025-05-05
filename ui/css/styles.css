@@ -1,0 +1,193 @@
+/* Reset CSS cho body và html */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Style cho bản đồ */
+#map {
+  height: 100vh;
+  width: 100%;
+}
+
+/* Style cho control panel chính */
+.control-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  width: 300px;
+  font-family: "Arial", sans-serif;
+}
+
+/* Style cho phần header của panel */
+.panel-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Style cho toggle switch */
+.toggle-switch {
+  position: relative;
+  width: 100px;
+  height: 34px;
+  margin: 0 auto;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Style cho toggle slider */
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4caf50;
+  transition: 0.4s;
+  border-radius: 34px;
+  overflow: hidden;
+}
+
+/* Style cho nút trượt trên toggle */
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+/* Style cho nhãn Guest/Admin trên toggle */
+.toggle-slider:after {
+  content: "Guest";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Style cho trạng thái checked của toggle */
+.toggle-input:checked + .toggle-slider {
+  background-color: #f44336;
+}
+
+.toggle-input:checked + .toggle-slider:before {
+  transform: translateX(65px);
+}
+
+.toggle-input:checked + .toggle-slider:after {
+  content: "Admin";
+}
+
+/* Style cho các panel điều khiển */
+.guest-controls,
+.admin-controls {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Style cho trạng thái ẩn của guest controls */
+.guest-controls.hide {
+  display: none;
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+/* Style cho admin controls */
+.admin-controls {
+  display: none;
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.admin-controls.show {
+  display: block;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Style cho các phần trong panel */
+.panel-section {
+  margin-bottom: 20px;
+}
+
+/* Style cho dropdown chọn thuật toán */
+.algorithm-select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background-color: white;
+}
+
+/* Style chung cho các nút */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Style cho các loại nút khác nhau */
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+.btn-warning {
+  background-color: #ffc107;
+  color: black;
+}
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+/* Style cho nhóm điều khiển */
+.control-group {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+/* Style cho nhóm radio buttons */
+.radio-group {
+  margin: 10px 0;
+}
+
+.radio-group label {
+  margin-right: 15px;
+}
