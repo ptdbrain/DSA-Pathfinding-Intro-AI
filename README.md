@@ -31,7 +31,7 @@ Project_AI_20242/
 │
 ├── .vscode/
 │
-├── .__pycache__/
+├── __pycache__/
 │
 ├── algorithm/                 
 │   ├── a_star.py
@@ -74,7 +74,7 @@ Project_AI_20242/
 
 ## ⚙️ How to Run
 ### 1. Install dependencies
-- Make sure you have Python 3 and Flask installed.
+- Make sure you have Python 3, Flask, osmnx installed.
 
 ```bash
 pip install flask osmnx
