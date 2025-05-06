@@ -89,6 +89,17 @@ roleToggle.addEventListener("change", function () {
   }
 });
 
+const trafficInput = document.getElementById("trafficLevel");
+
+trafficInput.addEventListener("input", () => {
+  let val = parseInt(trafficInput.value);
+  if (val > 3) {
+    trafficInput.value = 3;
+  } else if (val < 1) {
+    trafficInput.value = 1;
+  }
+});
+
 /*----------------------------------- HIện các node (icon giống gg) ---------------------------*/
 const googleIcon = L.icon({
   iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // icon giống trên gg map
@@ -148,7 +159,7 @@ map.on("click", function (e) {
   // Nếu đang là Admin và không trong các chế độ vẽ
   if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode) {
     alert(
-      "Chế độ Admin đang hoạt động.\nBạn không thể tìm đường (theo ý giang lê)"
+      "Chế độ Admin đang hoạt động.\nBạn không thể tìm đường"
     );
     return;
   }
@@ -190,8 +201,8 @@ map.on("click", function (e) {
     selectedPoints.push(closestNode.node_id);
     L.circleMarker([closestNode.lat, closestNode.lon], {
       radius: 6,
-      color: "red",
-      fillColor: "red",
+      color: "green",
+      fillColor: "green",
       fillOpacity: 1,
     }).addTo(map);
 
@@ -210,9 +221,26 @@ map.on("mousemove", function (e) {
     }
     const lastPoint =
       points.length > 0 ? points[points.length - 1] : startPoint;
+    let color;
+    let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
+    if (isBlockMode) {
+      color = "#f44336"; // Đỏ - cấm đường
+    } else {
+      switch (trafficLevel) {
+        case 1:
+          color = "#fdd835"; // Tắc nhẹ - vàng tươi
+          break;
+        case 2:
+          color = "#ffb300"; // Tắc vừa - cam đậm
+          break;
+        case 3:
+          color = "#bf360c"; // Tắc nặng - nâu cam đậm
+          break;
+      }
+    }
     if (lastPoint) {
       temporaryLine = L.polyline([lastPoint, [e.latlng.lat, e.latlng.lng]], {
-        color: "#f44336",
+        color: color,
         weight: 3,
         opacity: 0.5,
         dashArray: "5, 10",
@@ -249,9 +277,27 @@ document.addEventListener("keydown", function (e) {
       // Lưu đường vào danh sách
       lineList.push([...points]);
 
+      let color;
+      let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
+      if (mode === "block") {
+        color = "#f44336"; // Đỏ - cấm đường
+      } else if (mode === "traffic") {
+        switch (trafficLevel) {
+          case 1:
+            color = "#fdd835"; // Tắc nhẹ - vàng 
+            break;
+          case 2:
+            color = "#ffb300"; // Tắc vừa - cam đậm
+            break;
+          case 3:
+            color = "#bf360c"; // Tắc nặng - nâu cam đậm
+            break;
+        }
+      }
+
       // Vẽ đường
       L.polyline(points, {
-        color: "#f44336",
+        color: color,
         weight: 3,
         dashArray: "10,10",
         opacity: 0.8,
@@ -455,18 +501,35 @@ document.getElementById("restoreBanBtn").addEventListener("click", function () {
 });
 
 function redrawBannedLines() {
+  let color;
+  let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
+  if (isBlockMode) {
+    color = "#f44336"; // Đỏ - cấm đường
+  } else {
+    switch (trafficLevel) {
+      case 1:
+        color = "#fdd835"; // Tắc nhẹ - vàng tươi
+        break;
+      case 2:
+        color = "#ffb300"; // Tắc vừa - cam đậm
+        break;
+      case 3:
+        color = "#bf360c"; // Tắc nặng - nâu cam đậm
+        break;
+    }
+  }
   bannedLines.forEach((points) => {
     points.forEach((point) => {
       L.circleMarker(point, {
         radius: 5,
-        color: "#f44336",
-        fillColor: "#f44336",
+        color: color,
+        fillColor: color,
         fillOpacity: 1,
       }).addTo(map);
     });
 
     L.polyline(points, {
-      color: "#f44336",
+      color: color,
       weight: 3,
       dashArray: "10,10",
       opacity: 0.8,
@@ -476,14 +539,14 @@ function redrawBannedLines() {
     points.forEach((point) => {
       L.circleMarker(point, {
         radius: 5,
-        color: "#f44336",
-        fillColor: "#f44336",
+        color: color,
+        fillColor: color,
         fillOpacity: 1,
       }).addTo(map);
     });
 
     L.polyline(points, {
-      color: "#f44336",
+      color: color,
       weight: 3,
       dashArray: "10,10",
       opacity: 0.8,
@@ -810,9 +873,25 @@ function handleDrawingMode(lat, lng, isTraffic = false) {
   startPoint = [lat, lng];
   points.push([lat, lng]);
 
-  const lineColor = isTraffic ? "#ffa500" : "#f44336"; // cam cho traffic, đỏ cho cấm
+  let color;
+  let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
+  if (!isTraffic) {
+    color = "#f44336"; // Đỏ - cấm đường
+  } else {
+    switch (trafficLevel) {
+      case 1:
+        color = "#fdd835"; // Tắc nhẹ - vàng tươi
+        break;
+      case 2:
+        color = "#ffb300"; // Tắc vừa - cam đậm
+        break;
+      case 3:
+        color = "#bf360c"; // Tắc nặng - nâu cam đậm
+        break;
+    }
+  } // cam cho traffic, đỏ cho cấm
   const polylineOptions = {
-    color: lineColor,
+    color: color,
     weight: 3,
     dashArray: "10,10",
     opacity: 0.8,
@@ -823,8 +902,8 @@ function handleDrawingMode(lat, lng, isTraffic = false) {
   // Vẽ chấm tròn tại điểm click
   L.circleMarker(currentPoint, {
     radius: 5,
-    color: lineColor,
-    fillColor: lineColor,
+    color: color,
+    fillColor: color,
     fillOpacity: 1,
   }).addTo(map);
 

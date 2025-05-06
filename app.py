@@ -118,6 +118,7 @@ def find_path():
                     adj_list_filtered[v].remove(u)
 
         #------------------------------- Xử lý các cạnh tắc --------------------------------#
+        k = 1.5 if(int(trafic_level) == 1) else int(trafic_level)     
         for edge in trafic_edges:
             if len(edge) != 2:
                 continue
@@ -125,10 +126,10 @@ def find_path():
             # Kiểm tra xem cạnh có tồn tại trong đồ thị không
             if u in adj_list_filtered and v in adj_list_filtered[u]:
                 # Cập nhật trọng số của cạnh
-                adj_list_filtered[u][v] *= (int(trafic_level) * int(trafic_level))
+                adj_list_filtered[u][v] *= k
             if v in adj_list_filtered and u in adj_list_filtered[v]:
                 # Cập nhật trọng số của cạnh theo chiều ngược lại
-                adj_list_filtered[v][u] *= (int(trafic_level) * int(trafic_level))
+                adj_list_filtered[v][u] *= k
 
     
         algorithms = {
