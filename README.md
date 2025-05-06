@@ -1,87 +1,123 @@
-DSA-Pathfinding-Intro-AI
-This project is part of an Artificial Intelligence course. It focuses on implementing and visualizing pathfinding algorithms such as Dijkstra and A* on real-world map data sourced from OpenStreetMap. The application provides a web-based visualization tool that allows users to interact with the algorithms step-by-step.
+# 🧠 AI Smart Pathfinding Web App
+This project is a web-based smart pathfinding application built with Flask (Python backend) and HTML/CSS/JavaScript (frontend). It visualizes various graph search algorithms (like A*, Dijkstra, BFS, etc.) and allows interactive simulation on a custom graph or map.
 
-🚀 Features
-Display real-world map using OpenStreetMap data.
+## 🚀 Features
+- Visualizes pathfinding using algorithms:
 
-Implement pathfinding algorithms: Dijkstra and A*.
+  - A*
 
-Visualize the pathfinding process interactively on the web.
+  - Dijkstra
 
-Load map and graph data from CSV files (nodes.csv, adj_list.csv, adj_list_with_weights.csv).
+  - BFS
+    
+  - DFS
 
-🗂️ Project Structure
-python
-Copy
-Edit
-DSA-Pathfinding-Intro-AI/
-├── algorithm/                 # Algorithms implementations
-├── cache/                     # Cached data for optimization
-├── data/                      # Map data and graph input files
-├── getdata/                   # Scripts for processing OSM data
-├── __pycache__/               # Python bytecode cache
-├── adj_list.csv               # Graph adjacency list
-├── adj_list_with_weights.csv  # Weighted adjacency list
-├── nodes.csv                  # List of graph nodes with coordinates
-├── map.osm                    # OSM map file for visualization
-├── app.py                     # Flask application (backend)
-├── index.html                 # Web interface (frontend)
-├── test.py                    # Testing script
-└── README.md                  # Project documentation
-🛠️ Setup and Run
-Requirements
-Python 3.7+
+  - Greedy Best-First Search
 
-Flask
+  - Uniform Cost Search
 
-NetworkX
+  - Iterative Deepening Search
 
-Other dependencies listed in requirements.txt
+- Admin controls for creating blocked roads, simulating traffic, etc.
 
-Installation
-Clone the repository:
+- Extendable and modular code structure
 
-bash
-Copy
-Edit
-git clone https://github.com/ptdbrain/DSA-Pathfinding-Intro-AI.git
-cd DSA-Pathfinding-Intro-AI
-Create a virtual environment and install dependencies:
+## 🗂️ Project Structure
 
-bash
-Copy
-Edit
-python -m venv venv
-source venv/bin/activate     # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-Running the Application
-Start the Flask server:
+```bash
+Project_AI_20242/
+│
+├── .idea/
+│
+├── .vscode/
+│
+├── __pycache__/
+│
+├── algorithm/                 
+│   ├── a_star.py
+│   ├── bfs.py
+│   ├── dfs.py
+│   ├── dijkstra.py
+│   ├── greedy_best_first.py
+│   ├── iterative_deepening_dfs.py
+│   └── uniform_cost_search.py
+│
+├── data/
+│   ├── fileCSV/
+│       ├── adj_list.csv
+│       ├── adj_list_with_weights.csv
+│       ├── nodes.csv
+│       └── nodes_latlon.csv
+│   └── fileJs/
+│       ├── adj_list.js
+│       ├── adj_list_with_weights.js      
+│       └── nodes.js
+│
+├── getdata/
+│   ├── adj_list_with_weights.py
+│   ├── checkvisualize.py
+│   ├── datalatlon.py
+│   └── laydulieunode.py
+│
+├── ui/
+│   ├── css/
+│       └── styles.css
+│   └── js/
+│       └── main.js
+│
+├── app.py
+│
+├── index.html
+│
+└── README.md
+```
 
-bash
-Copy
-Edit
-python app.py
-Open your browser and navigate to:
+## ⚙️ How to Run
+### 1. Install dependencies
+- Make sure you have Python 3, Flask, osmnx installed.
 
-arduino
-Copy
-Edit
-http://localhost:5000
-to use the web interface.
+```bash
+pip install flask osmnx
+```
 
-📊 Data Files
-nodes.csv: Node ID and (x, y) coordinates for each node.
+### 2. Start Flask server
 
-adj_list.csv: Graph edges in adjacency list format.
+```bash
+py app.py
+```
 
-adj_list_with_weights.csv: Same as above but includes weights (distances/costs).
+- You will see something like:
 
-map.osm: Raw map file from OpenStreetMap used to render the background map.
+```nginx
+Running on http://127.0.0.1:5000
+```
+### 3. Open in browser
+- Open your browser and go to:
 
-⚠️ Notes
-Ensure all CSV files and map.osm are placed in the correct directories.
+```cpp
+http://127.0.0.1:5000
+```
 
-If you encounter errors, check file formats and ensure consistency between node IDs and edges.
+- ✅ DO NOT open index.html directly using Live Server or double-clicking it, as that will bypass Flask and break API communication.
 
-📄 License
-This project is licensed under the MIT License.
+## 🛠️ Add New Algorithms
+- To add a new search algorithm:
+
+  - Create a new .py file inside the algorithm/ directory.
+
+  - Follow the input/output format as shown in existing algorithms.
+
+  - Register your algorithm in app.py where routing is handled.
+
+## 📧 Contact
+
+For any questions, feel free to reach out to the project team members:
+
+- **Project Members**:
+  - Kiều Giang Biên
+  - Phan Trọng Đạt
+  - Phạm Trung Đức
+  - Lê Trường Giang
+  - Phạm Ngọc Tuyên
+
+If you'd like to report bugs, suggest features, or contribute, please open an issue on the [Project_AI_20242](https://github.com/BienKieu1411/Project_AI_20242).
