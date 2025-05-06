@@ -422,8 +422,53 @@ document.getElementById("trafficBtn").addEventListener("click", function () {
     map.removeLayer(trafficPolyline);
     trafficPolyline = null;
   }
-  alert("Click bản đồ để tạo vùng tắc \n ESC để hủy tắt vẽ cấm đường");
+  alert("Click bản đồ để tạo vùng tắc \n ESC để hủy tắt vẽ tắc đường");
   console.log("Bật chế độ vẽ vùng tắc");
+});
+
+document.getElementById("restoreTacBtn").addEventListener("click", function () {
+  if (trafficLine.length === 0) {
+    console.warn("Không còn đường tắc nào để khôi phục.");
+    return;
+  }
+  trafficLine.pop();
+
+  map.eachLayer(function (layer) {
+    if (
+      (layer instanceof L.Polyline &&
+        (layer.options.color === "#fdd835"||
+        layer.options.color === "#ffb300" ||
+        layer.options.color === "#bf360c")
+      ) ||
+      layer instanceof L.CircleMarker
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+
+  trafficLine.forEach((linePoints) => {
+
+    L.polyline(linePoints, {
+      color: "#ffb300",
+      weight: 3,
+      dashArray: "10,10",
+      opacity: 0.8,
+    }).addTo(map);
+  });
+
+  // Cập nhật lại danh sách blockedEdges
+  trafficEdges = [];
+  trafficLine.forEach((linePoints) => {
+    for (let i = 0; i < linePoints.length - 1; i++) {
+      const p1 = linePoints[i];
+      const p2 = linePoints[i + 1];
+      if (p1 && p2) {
+        detectBlockedEdgesByCut([p1, p2]);
+      }
+    }
+  });
+
+  console.log("Đã khôi phục lại các đường tắc còn lại.");
 });
 
 function isEdgeTraffic(edge) {
@@ -889,7 +934,7 @@ function handleDrawingMode(lat, lng, isTraffic = false) {
         color = "#bf360c"; // Tắc nặng - nâu cam đậm
         break;
     }
-  } // cam cho traffic, đỏ cho cấm
+  } 
   const polylineOptions = {
     color: color,
     weight: 3,

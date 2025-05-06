@@ -297,3 +297,22 @@ input[type="number"] {
 .theme-toggle-btn.active+.theme-dropdown {
   display: block;
 }
+
+.admin-controls {
+  max-height: 307px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.admin-controls::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-controls::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 2px;
+}
+
+.admin-controls::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}
