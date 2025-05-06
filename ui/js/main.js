@@ -23,6 +23,13 @@ let isTrafficMode = false; // Biến toàn cục để xác định chế độ 
 let trafficLine = [];
 let trafficEdges = []; // Biến toàn cục để lưu các cạnh tắc đường
 
+let floodLevel; // Biến toàn cục để xác định mức độ ngập
+let floodMarkers = []; // Biến toàn cục để lưu các marker ngập
+let floodPolyline = null; // Biến toàn cục để lưu polyline ngập
+let isFloodMode = false; // Biến toàn cục để xác định chế độ ngập
+let floodLine = [];
+let floodEdges = []; // Biến toàn cục để lưu các cạnh ngập
+
 let algorithmSelect = document.getElementById("algorithmSelect");
 // Khởi tạo bản đồ
 const map = L.map("map").setView([21.0453, 105.8426], 16);
@@ -84,6 +91,7 @@ roleToggle.addEventListener("change", function () {
     isDrawing = false;
     isPlacingObstacle = false;
     isTrafficMode = false;
+    isFloodMode = false;
     selectedPoints = [];
     startPoint = null;
   }
@@ -100,6 +108,27 @@ trafficInput.addEventListener("input", () => {
   }
 });
 
+const floodInput = document.getElementById("floodLevel");
+
+floodInput.addEventListener("input", () => {
+  let val = parseInt(floodInput.value);
+  if (val > 3) {
+    floodInput.value = 3;
+  } else if (val < 1) {
+    floodInput.value = 1;
+  }
+});
+
+const obstacleRadiusInput = document.getElementById("obstacleRadius");
+
+obstacleRadiusInput.addEventListener("input", () => {
+  let val = parseInt(obstacleRadiusInput.value);
+  if (val > 200) {
+    obstacleRadiusInput.value = 200;
+  } else if (val < 10) {
+    obstacleRadiusInput.value = 10;
+  }
+});
 /*----------------------------------- HIện các node (icon giống gg) ---------------------------*/
 const googleIcon = L.icon({
   iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // icon giống trên gg map
@@ -141,7 +170,7 @@ document.getElementById("togglePaths").addEventListener("click", () => {
 
         L.polyline(latlngs, {
           color: "green",
-          weight: 4,
+          weight: 3,
           opacity: 0.8,
         }).addTo(map);
       }
@@ -157,7 +186,7 @@ map.on("click", function (e) {
   const { lat, lng } = e.latlng;
 
   // Nếu đang là Admin và không trong các chế độ vẽ
-  if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode) {
+  if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode && !isFloodMode) {
     alert(
       "Chế độ Admin đang hoạt động.\nBạn không thể tìm đường"
     );
@@ -165,8 +194,8 @@ map.on("click", function (e) {
   }
 
   // 1. Chế độ vẽ đường cấm hoặc tắc đường (đều sử dụng polyline)
-  if (isBlockMode || isTrafficMode) {
-    handleDrawingMode(lat, lng, isTrafficMode);
+  if (isBlockMode || isTrafficMode || isFloodMode) {
+    handleDrawingMode(lat, lng, isTrafficMode, isFloodMode);
     return;
   }
 
@@ -215,17 +244,17 @@ map.on("click", function (e) {
 
 // Xử lý di chuyển chuột
 map.on("mousemove", function (e) {
-  if ((isBlockMode || isTrafficMode) && isDrawing) {
+  if ((isBlockMode || isTrafficMode || isFloodMode) && isDrawing) {
     if (temporaryLine) {
       map.removeLayer(temporaryLine);
     }
-    const lastPoint =
-      points.length > 0 ? points[points.length - 1] : startPoint;
+    const lastPoint = points.length > 0 ? points[points.length - 1] : startPoint;
     let color;
     let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
-    if (isBlockMode) {
+    let floodLevel = parseInt(document.getElementById("floodLevel").value);
+    if (!isTrafficMode && !isFloodMode) {
       color = "#f44336"; // Đỏ - cấm đường
-    } else {
+    } else if(isTrafficMode){
       switch (trafficLevel) {
         case 1:
           color = "#fdd835"; // Tắc nhẹ - vàng tươi
@@ -235,6 +264,18 @@ map.on("mousemove", function (e) {
           break;
         case 3:
           color = "#bf360c"; // Tắc nặng - nâu cam đậm
+          break;
+      }
+    }  else {
+      switch (floodLevel) {
+        case 1:
+          color = "#64b5f6"; // Ngập nhẹ - xanh dương nhạt
+          break;
+        case 2:
+          color = "#2196f3"; // Ngập vừa - xanh dương vừa
+          break;
+        case 3:
+          color = "#0d47a1"; // Ngập nặng - xanh dương đậm nhất
           break;
       }
     }
@@ -269,6 +310,11 @@ document.addEventListener("keydown", function (e) {
       lineList = trafficLine;
       tempLine = trafficPolyline;
       edgesList = trafficEdges;
+    } else if (isFloodMode) {
+      mode = "flood";
+      lineList = floodLine;
+      tempLine = floodPolyline;
+      edgesList = floodEdges;
     }
 
     if (mode && points.length > 0) {
@@ -279,18 +325,31 @@ document.addEventListener("keydown", function (e) {
 
       let color;
       let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
+      let floodLevel = parseInt(document.getElementById("floodLevel").value);
       if (mode === "block") {
         color = "#f44336"; // Đỏ - cấm đường
-      } else if (mode === "traffic") {
+      } else if(mode === "traffic"){
         switch (trafficLevel) {
           case 1:
-            color = "#fdd835"; // Tắc nhẹ - vàng 
+            color = "#fdd835"; // Tắc nhẹ - vàng tươi
             break;
           case 2:
             color = "#ffb300"; // Tắc vừa - cam đậm
             break;
           case 3:
             color = "#bf360c"; // Tắc nặng - nâu cam đậm
+            break;
+        }
+      }  else {
+        switch (floodLevel) {
+          case 1:
+            color = "#64b5f6"; // Ngập nhẹ - xanh dương nhạt
+            break;
+          case 2:
+            color = "#2196f3"; // Ngập vừa - xanh dương vừa
+            break;
+          case 3:
+            color = "#0d47a1"; // Ngập nặng - xanh dương đậm nhất
             break;
         }
       }
@@ -340,6 +399,7 @@ document.addEventListener("keydown", function (e) {
       points = [];
       isBlockMode = false;
       isTrafficMode = false;
+      isFloodMode = false;
       isDrawing = false;
       startPoint = null;
     } else if (mode) {
@@ -362,6 +422,8 @@ function findAndDrawPath() {
       algorithm: algorithm, // Thuật toán
       traffic_edges: trafficEdges, // Đường tắc
       traffic_level: trafficLevel, // Hệ số tắc đường
+      flood_edges: floodEdges,
+      flood_level: floodLevel
     }),
   })
     .then((res) => res.json())
@@ -409,6 +471,82 @@ function getAlgorithm() {
     }
   });
   findAndDrawPath();
+}
+
+/*---------------------------------------------------- Xử lý ngập lụt ---------------------------*/
+document.getElementById("floodBtn").addEventListener("click", function () {
+  isFloodMode = true;
+  isDrawing = true;
+  points = [];
+  floodLevel = document.getElementById("floodLevel").value;
+  console.log("Mức độ ngập lụt:", floodLevel.value);
+  if (floodPolyline) {
+    map.removeLayer(floodPolyline);
+    floodPolyline = null;
+  }
+  alert("Click bản đồ để tạo vùng ngập lụt \n ESC để hủy tắt vẽ ngập lụt");
+  console.log("Bật chế độ vẽ ngập lụt");
+});
+
+document.getElementById("restoreFloodBtn").addEventListener("click", function () {
+  if (floodLine.length === 0) {
+    console.warn("Không còn đường ngập lụt nào để khôi phục.");
+    return;
+  }
+  floodLine.pop();
+
+  map.eachLayer(function (layer) {
+    if (
+      (layer instanceof L.Polyline &&
+        (layer.options.color === "#64b5f6"||
+        layer.options.color === "#2196f3" ||
+        layer.options.color === "#0d47a1")
+      ) ||
+      layer instanceof L.CircleMarker
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+
+  floodLine.forEach((linePoints) => {
+
+    L.polyline(linePoints, {
+      color: "#ffb300",
+      weight: 3,
+      dashArray: "10,10",
+      opacity: 0.8,
+    }).addTo(map);
+  });
+
+  // Cập nhật lại danh sách blockedEdges
+  floodEdges = [];
+  floodLine.forEach((linePoints) => {
+    for (let i = 0; i < linePoints.length - 1; i++) {
+      const p1 = linePoints[i];
+      const p2 = linePoints[i + 1];
+      if (p1 && p2) {
+        detectBlockedEdgesByCut([p1, p2]);
+      }
+    }
+  });
+
+  console.log("Đã khôi phục lại các đường tắc còn lại.");
+});
+
+function isEdgeFlood(edge) {
+  return floodEdges.some(
+    (blocked) =>
+      (blocked[0] === edge[0] && blocked[1] === edge[1]) ||
+      (blocked[0] === edge[1] && blocked[1] === edge[0])
+  );
+}
+
+function handleFloodEdge(edge) {
+  if (!isEdgeFlood(edge)) {
+    floodEdges.push(edge);
+    console.log(`💢 Cạnh xảy ra ngập lụt: ${edge[0]} - ${edge[1]}`);
+    console.log();
+  }
 }
 
 /*---------------------------------------------------- Xử lý tắc đường ---------------------------*/
@@ -546,52 +684,54 @@ document.getElementById("restoreBanBtn").addEventListener("click", function () {
 });
 
 function redrawBannedLines() {
-  let color;
-  let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
-  if (isBlockMode) {
-    color = "#f44336"; // Đỏ - cấm đường
-  } else {
-    switch (trafficLevel) {
-      case 1:
-        color = "#fdd835"; // Tắc nhẹ - vàng tươi
-        break;
-      case 2:
-        color = "#ffb300"; // Tắc vừa - cam đậm
-        break;
-      case 3:
-        color = "#bf360c"; // Tắc nặng - nâu cam đậm
-        break;
-    }
-  }
   bannedLines.forEach((points) => {
     points.forEach((point) => {
       L.circleMarker(point, {
         radius: 5,
-        color: color,
-        fillColor: color,
+        color: "red",
+        fillColor: "red",
         fillOpacity: 1,
       }).addTo(map);
     });
 
     L.polyline(points, {
-      color: color,
+      color: "red",
       weight: 3,
       dashArray: "10,10",
       opacity: 0.8,
     }).addTo(map);
   });
+
   trafficLine.forEach((points) => {
     points.forEach((point) => {
       L.circleMarker(point, {
         radius: 5,
-        color: color,
-        fillColor: color,
+        color: "yellow",
+        fillColor: "yellow",
         fillOpacity: 1,
       }).addTo(map);
     });
 
     L.polyline(points, {
-      color: color,
+      color: "yellow",
+      weight: 3,
+      dashArray: "10,10",
+      opacity: 0.8,
+    }).addTo(map);
+  });
+
+  floodLine.forEach((points) => {
+    points.forEach((point) => {
+      L.circleMarker(point, {
+        radius: 5,
+        color: "blue",
+        fillColor: "blue",
+        fillOpacity: 1,
+      }).addTo(map);
+    });
+
+    L.polyline(points, {
+      color: "blue",
       weight: 3,
       dashArray: "10,10",
       opacity: 0.8,
@@ -703,6 +843,7 @@ function resetMapWithGuest() {
   isDrawing = false;
   isBlockMode = false;
   isTrafficMode = false;
+  isFloodMode = false;
   showNodes = false;
   map.eachLayer(function (layer) {
     if (!(layer instanceof L.TileLayer)) {
@@ -730,8 +871,10 @@ function resetMapWithAdmin() {
   isDrawing = false;
   isBlockMode = false;
   isTrafficMode = false;
+  isFloodMode = false;
   bannedLines = [];
   trafficLine = [];
+  floodLine = [];
   if (temporaryLine) {
     temporaryLine = null;
   }
@@ -740,6 +883,7 @@ function resetMapWithAdmin() {
   isPlacingObstacle = false;
   blockedEdges = [];
   trafficEdges = [];
+  floodEdges = [];
 
   // Xóa tất cả các layer trên bản đồ
   map.eachLayer(function (layer) {
@@ -750,6 +894,7 @@ function resetMapWithAdmin() {
   console.log("\nReset bản đồ thành công!\n");
   console.log("Blocked edges: ", blockedEdges);
   console.log("TrafficEdges: ", trafficEdges);
+  console.log("TrafficEdges: ", floodEdges);
   const placeObstacleBtn = document.getElementById("placeObstacleBtn");
   placeObstacleBtn.textContent = "Đặt vật cản";
   placeObstacleBtn.classList.remove("btn-danger");
@@ -908,21 +1053,23 @@ function detectBlockedEdgesByCut(cutLine) {
       if (segmentsIntersect(p1, p2, edgeLine[0], edgeLine[1], 0.0001)) {
         if (isBlockMode) handleBlockedEdge([nodeU.node_id, nodeV.node_id]);
         if (isTrafficMode) handleTrafficEdge([nodeU.node_id, nodeV.node_id]);
+        if (isFloodMode) handleFloodEdge([nodeU.node_id, nodeV.node_id])
       }
     }
   }
 }
 
-function handleDrawingMode(lat, lng, isTraffic = false) {
+function handleDrawingMode(lat, lng, isTraffic = false, isFlood = false) {
   isDrawing = true;
   startPoint = [lat, lng];
   points.push([lat, lng]);
 
   let color;
   let trafficLevel = parseInt(document.getElementById("trafficLevel").value);
-  if (!isTraffic) {
+  let floodLevel = parseInt(document.getElementById("floodLevel").value);
+  if (!isTraffic && !isFlood) {
     color = "#f44336"; // Đỏ - cấm đường
-  } else {
+  } else if(isTraffic){
     switch (trafficLevel) {
       case 1:
         color = "#fdd835"; // Tắc nhẹ - vàng tươi
@@ -934,7 +1081,19 @@ function handleDrawingMode(lat, lng, isTraffic = false) {
         color = "#bf360c"; // Tắc nặng - nâu cam đậm
         break;
     }
-  } 
+  }  else {
+    switch (floodLevel) {
+      case 1:
+        color = "#64b5f6"; // Ngập nhẹ - xanh dương nhạt
+        break;
+      case 2:
+        color = "#2196f3"; // Ngập vừa - xanh dương vừa
+        break;
+      case 3:
+        color = "#0d47a1"; // Ngập nặng - xanh dương đậm nhất
+        break;
+    }
+  }
   const polylineOptions = {
     color: color,
     weight: 3,
@@ -955,13 +1114,17 @@ function handleDrawingMode(lat, lng, isTraffic = false) {
   // Xóa polyline cũ nếu có
   if (isTraffic && trafficPolyline) {
     map.removeLayer(trafficPolyline);
-  } else if (!isTraffic && banPolyline) {
+  } else if (isFlood && floodPolyline){
+    map.removeLayer(floodPolyline);
+  } else if (banPolyline) {
     map.removeLayer(banPolyline);
   }
 
   // Tạo polyline mới
   if (isTraffic) {
     trafficPolyline = L.polyline(points, polylineOptions).addTo(map);
+  } else if (isFlood){
+    floodPolyline = L.polyline(points, polylineOptions).addTo(map);
   } else {
     banPolyline = L.polyline(points, polylineOptions).addTo(map);
   }

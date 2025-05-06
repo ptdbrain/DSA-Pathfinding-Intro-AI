@@ -66,6 +66,8 @@ def find_path():
     algorithm = data.get('algorithm', 'A*')
     trafic_edges = data.get('traffic_edges', [])
     trafic_level = data.get('traffic_level', 0)
+    flood_edges = data.get('flood_edges', [])
+    flood_level = data.get('flood_level', 0)
 
     # kiểm tra điều kiện đầu vào 
     if 'start' not in data or 'end' not in data:
@@ -92,6 +94,8 @@ def find_path():
     print(f"Number Blocked edges: {len(blocked_edges)}")
     print(f"Number Traffic edges: {len(trafic_edges)}")
     print(f"Traffic level: {trafic_level}")
+    print(f"Number Flood edges: {len(flood_edges)}")
+    print(f"Flood level: {flood_level}")
     print(f"Number of iterations: {num_iterations}")
     try:
         # Tạo bản sao đồ thị và xóa các cạnh bị cấm
@@ -130,7 +134,21 @@ def find_path():
             if v in adj_list_filtered and u in adj_list_filtered[v]:
                 # Cập nhật trọng số của cạnh theo chiều ngược lại
                 adj_list_filtered[v][u] *= k
-
+                
+                
+        #------------------------------- Xử lý các cạnh ngập --------------------------------#
+        f = inf if(int(flood_level) == 3) else (int(flood_level) + 1) ** 2
+        for edge in flood_edges:
+            if len(edge) != 2:
+                continue
+            u, v = edge
+            # Kiểm tra xem cạnh có tồn tại trong đồ thị không
+            if u in adj_list_filtered and v in adj_list_filtered[u]:
+                # Cập nhật trọng số của cạnh
+                adj_list_filtered[u][v] *= f
+            if v in adj_list_filtered and u in adj_list_filtered[v]:
+                # Cập nhật trọng số của cạnh theo chiều ngược lại
+                adj_list_filtered[v][u] *= f
     
         algorithms = {
             'A Star': astar,
