@@ -125,10 +125,10 @@ def find_path():
             # Kiểm tra xem cạnh có tồn tại trong đồ thị không
             if u in adj_list_filtered and v in adj_list_filtered[u]:
                 # Cập nhật trọng số của cạnh
-                adj_list_filtered[u][v] *= int(trafic_level * trafic_level)
+                adj_list_filtered[u][v] *= (int(trafic_level) * int(trafic_level))
             if v in adj_list_filtered and u in adj_list_filtered[v]:
                 # Cập nhật trọng số của cạnh theo chiều ngược lại
-                adj_list_filtered[v][u] *= int(trafic_level * trafic_level)
+                adj_list_filtered[v][u] *= (int(trafic_level) * int(trafic_level))
 
     
         algorithms = {
@@ -154,7 +154,8 @@ def find_path():
                 return jsonify({
                     "path": path,
                     "explored_nodes": list_explore_node,
-                    "message": "Path found successfully."
+                    "message": "Path found successfully.",
+                    "Cost": "someone"
                 })
             else:
                 print("❌ No path found.")
@@ -163,8 +164,8 @@ def find_path():
             return jsonify({"error": "Invalid algorithm specified."}), 400
 
     except Exception as e:
-        print(f"❌ Không tìm thấy đường đi")
-        return jsonify({"error": "❌ Không tìm thấy đường đi"}), 500
+        print(f"❌ Có lỗi xảy ra ")
+        return jsonify({"error": "❌ Có lỗi xảy ra "}), 500
 
 
 if __name__ == '__main__':
