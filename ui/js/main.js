@@ -592,24 +592,24 @@ function findAndDrawPath() {
 
 algorithmSelect.addEventListener("change", function () {
     algorithm = this.value;
-    map.closePopup();
+    if(selectedPoints.length === 2){
+      const mapCenter = map.getCenter();
 
-    const mapCenter = map.getCenter();
+      L.popup({
+              className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup',
+              autoClose: true, 
+              closeOnClick: true,
+          })
+          .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+          .setContent(`Đã chọn thuật toán: <b>${algorithm}</b>.<br>Đang làm mới đường đi... 🤖`)
+          .openOn(map);
 
-    L.popup({
-            className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup',
-            autoClose: true, 
-            closeOnClick: true,
-        })
-        .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
-        .setContent(`Đã chọn thuật toán: <b>${algorithm}</b>.<br>Đang làm mới đường đi... 🤖`)
-        .openOn(map);
+      setTimeout(() => {
+          map.closePopup();
+      }, 3000); // Đóng sau 3 giây
 
-    setTimeout(() => {
-        map.closePopup();
-    }, 5000); // Đóng sau 3 giây
-
-    getAlgorithm(); // Gọi hàm để làm mới đường đi
+      getAlgorithm(); // Gọi hàm để làm mới đường đi
+    }
 });
 
 function getAlgorithm() {
