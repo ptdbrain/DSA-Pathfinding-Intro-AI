@@ -354,7 +354,6 @@ input[type="number"] {
   margin-top: 5px;
   margin-bottom: 8px;
   font-size: 1.05rem;
-  color: #333333 !important;
   /* LUÔN LÀ MÀU ĐEN/XÁM ĐẬM */
   /* Hoặc dùng #000000 cho màu đen tuyền */
   font-weight: 600;
@@ -365,7 +364,6 @@ input[type="number"] {
   display: block;
   margin-bottom: 10px;
   font-size: 0.85rem;
-  color: #333333 !important;
   /* LUÔN LÀ MÀU ĐEN/XÁM ĐẬM */
   /* Hoặc dùng #000000 !important; cho màu đen tuyền */
   opacity: 0.9;

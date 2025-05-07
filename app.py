@@ -156,18 +156,31 @@ def find_path():
         elif flood_level == 2:
             f = 2
         elif flood_level == 3:
-            f = inf
+            f = 99999999
         for edge in flood_edges:
             if len(edge) != 2:
                 continue
             u, v = edge
+            if (f != 99999999):
             # Kiểm tra xem cạnh có tồn tại trong đồ thị không
-            if u in adj_list_filtered and v in adj_list_filtered[u]:
-                # Cập nhật trọng số của cạnh
-                adj_list_filtered[u][v] *= f
-            if v in adj_list_filtered and u in adj_list_filtered[v]:
-                # Cập nhật trọng số của cạnh theo chiều ngược lại
-                adj_list_filtered[v][u] *= f
+                if u in adj_list_filtered and v in adj_list_filtered[u]:
+                    # Cập nhật trọng số của cạnh
+                    adj_list_filtered[u][v] *= f
+                if v in adj_list_filtered and u in adj_list_filtered[v]:
+                    # Cập nhật trọng số của cạnh theo chiều ngược lại
+                    adj_list_filtered[v][u] *= f
+            else:
+                if isinstance(adj_list_filtered[u], dict):
+                    adj_list_filtered[u].pop(v, None)
+                elif isinstance(adj_list_filtered[u], list):
+                    if v in adj_list_filtered[u]:
+                        adj_list_filtered[u].remove(v)
+
+                if isinstance(adj_list_filtered[v], dict):
+                    adj_list_filtered[v].pop(u, None)
+                elif isinstance(adj_list_filtered[v], list):
+                    if u in adj_list_filtered[v]:
+                        adj_list_filtered[v].remove(u)
     
         algorithms = {
             'A Star': astar,
