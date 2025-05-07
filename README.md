@@ -22,6 +22,10 @@ This project is a web-based smart pathfinding application built with Flask (Pyth
 
 - Extendable and modular code structure
 
+## 🌐 Demo
+
+You can try the **PathFinder** demo online at: [PathFinder](https://bienkieu1411.github.io/Project_AI_20242/)  
+
 ## 🗂️ Project Structure
 
 ```bash
