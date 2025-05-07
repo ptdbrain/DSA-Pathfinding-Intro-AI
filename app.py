@@ -68,6 +68,7 @@ def find_path():
     trafic_level = data.get('traffic_level', 0)
     flood_edges = data.get('flood_edges', [])
     flood_level = data.get('flood_level', 0)
+    one_way_edges = data.get('one_way_edges', [])
 
     # kiểm tra điều kiện đầu vào 
     if 'start' not in data or 'end' not in data:
@@ -101,6 +102,13 @@ def find_path():
         # Tạo bản sao đồ thị và xóa các cạnh bị cấm
         from copy import deepcopy
         adj_list_filtered = deepcopy(adj_list)
+        
+        for one_way_edge in one_way_edges:
+            if len(one_way_edge) == 2:
+                source, destination = one_way_edge
+                # Kiểm tra xem destination có trong đồ thị và source có phải là hàng xóm của destination không
+                if destination in adj_list_filtered and isinstance(adj_list_filtered[destination], dict):
+                    adj_list_filtered[destination].pop(source, None) # Xóa source khỏi danh sách kề của destination
 
         #------------------------------- Xử lý các cạnh bị cấm --------------------------------#     
         for edge in blocked_edges:
@@ -122,7 +130,12 @@ def find_path():
                     adj_list_filtered[v].remove(u)
 
         #------------------------------- Xử lý các cạnh tắc --------------------------------#
-        k = 1.5 if(int(trafic_level) == 1) else int(trafic_level)     
+        if int(trafic_level) == 1:
+            k = 1.2
+        elif int(trafic_level) == 2:
+            k = 1.5
+        elif int(trafic_level) == 3:
+            k = 2
         for edge in trafic_edges:
             if len(edge) != 2:
                 continue
@@ -137,7 +150,13 @@ def find_path():
                 
                 
         #------------------------------- Xử lý các cạnh ngập --------------------------------#
-        f = inf if(int(flood_level) == 3) else (int(flood_level) + 1) ** 2
+        flood_level = int(flood_level)
+        if flood_level == 1:
+            f = 1.5
+        elif flood_level == 2:
+            f = 2
+        elif flood_level == 3:
+            f = inf
         for edge in flood_edges:
             if len(edge) != 2:
                 continue
