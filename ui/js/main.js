@@ -73,11 +73,24 @@ roleToggle.addEventListener("change", function () {
   console.log("Bạn đang ở chế độ", newRole);
 
   if (isDrawing && !isChecked) {
-    alert(
-      "Bạn đang trong chế độ vẽ đường cấm!\nVui lòng hoàn thành (nhấn ESC) hoặc hủy vẽ trước khi chuyển sang Guest."
-    );
-    this.checked = true; // Giữ lại Admin
-    return;
+      map.closePopup(); // Đóng các popup khác nếu có
+      const mapCenter = map.getCenter(); // Lấy vị trí giữa bản đồ để hiển thị popup
+      let taskDescription = "thực hiện một thao tác vẽ"; // Mô tả chung
+      // Cụ thể hóa mô tả tác vụ nếu có thể
+      if (isBlockMode) taskDescription = "vẽ đường cấm";
+      else if (isTrafficMode) taskDescription = "đánh dấu tắc đường";
+      else if (isFloodMode) taskDescription = "đánh dấu ngập lụt";
+      // isPlacingObstacle không dùng isDrawing, nên không cần kiểm tra ở đây nếu chỉ dựa vào isDrawing
+      L.popup({
+              className: 'warning-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+              autoClose: true,
+              closeOnClick: true
+          })
+          .setLatLng(mapCenter)
+          .setContent(`<b>Cảnh báo:</b> Bạn đang trong quá trình ${taskDescription}.<br>Vui lòng hoàn thành (nhấn ESC) hoặc hủy bỏ trước khi chuyển sang chế độ Guest.`)
+          .openOn(map);
+      this.checked = true;
+      return;
   }
 
   isAdmin = isChecked;
@@ -487,56 +500,118 @@ document.addEventListener("keydown", function (e) {
 });
 
 // Hàm truyền đối số cho backend
-function findAndDrawPath() {
-  fetch("http://127.0.0.1:5000/find_path", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      start: selectedPoints[0], // Điểm khởi đầu
-      end: selectedPoints[1], // Điểm kết thúc
-      blocked_edges: blockedEdges, // Đường cấm
-      algorithm: algorithm, // Thuật toán
-      traffic_edges: trafficEdges, // Đường tắc
-      traffic_level: trafficLevel, // Hệ số tắc đường
-      flood_edges: floodEdges,
-      flood_level: floodLevel,
-      one_way_edges: oneWayEdges
-    }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.path) {
-        // -- Vẽ đường đi cho Gle
-        // exploredNodes = data.explored_nodes;
-        // highlightExploredNodes(exploredNodes, () => drawPath(data.path));
-        // // selectedPoints = [];
-        console.log(
-          "Tìm thấy đường đi giữa 2 điểm " +
-            selectedPoints[0] +
-            " -> " +
-            selectedPoints[1] + "\n Chi phí đường đi " + data.Cost
-        );
-        drawPath(data.path);
-      } else {
-        alert(data.error || "Không tìm thấy đường đi.");
-      }
-    })
-    .catch((err) => {
-      console.error("Lỗi:", err);
-      alert("Chưa chạy app.py");
-    });
+function displayPathfindingError(errorMessage) {
+    map.closePopup();
+
+    let popupLocation;
+    if (selectedPoints && selectedPoints.length === 2) {
+        const node1 = nodes.find(n => n.node_id === selectedPoints[0]);
+        const node2 = nodes.find(n => n.node_id === selectedPoints[1]);
+        if (node1 && node2) {
+            const lat1 = parseFloat(node1.lat);
+            const lon1 = parseFloat(node1.lon);
+            const lat2 = parseFloat(node2.lat);
+            const lon2 = parseFloat(node2.lon);
+            if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
+                popupLocation = L.latLng((lat1 + lat2) / 2, (lon1 + lon2) / 2);
+            }
+        }
+    }
+    if (!popupLocation) {
+        popupLocation = map.getCenter();
+    }
+
+    L.popup({
+            className: 'error-leaflet-popup synced-leaflet-popup compact-point-popup',
+            autoClose: true,
+            closeOnClick: true
+        })
+        .setLatLng(popupLocation)
+        .setContent(`<b>Lỗi tìm đường:</b><br>${errorMessage}`)
+        .openOn(map);
 }
 
+function findAndDrawPath() {
+    fetch("http://127.0.0.1:5000/find_path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            start: selectedPoints[0],
+            end: selectedPoints[1],
+            blocked_edges: blockedEdges,
+            algorithm: algorithm,
+            traffic_edges: trafficEdges,
+            traffic_level: trafficLevel,
+            flood_edges: floodEdges,
+            flood_level: floodLevel,
+            one_way_edges: oneWayEdges
+        }),
+    })
+    .then((res) => {
+        if (!res.ok) {
+            return res.json().then(errorData => {
+                let err = new Error(errorData.error || `Lỗi ${res.status}: Không thể xử lý yêu cầu.`);
+                err.data = errorData;
+                throw err;
+            });
+        }
+        return res.json();
+    })
+    .then((data) => {
+        if (data.path) {
+            console.log(
+                "Tìm thấy đường đi giữa 2 điểm " +
+                selectedPoints[0] +
+                " -> " +
+                selectedPoints[1] + (data.Cost ? ("\nChi phí đường đi: " + data.Cost) : "")
+            );
+            drawPath(data.path);
+        } else {
+            // Trường hợp server trả về 200 OK nhưng không có data.path (ít xảy ra nếu backend chuẩn)
+            displayPathfindingError(data.error || "Không tìm thấy đường đi.");
+        }
+    })
+    .catch((err) => {
+        console.error("Lỗi khi gọi API tìm đường:", err);
+        let errorMessage = "Không thể kết nối đến máy chủ hoặc có lỗi xảy ra.";
+        if (err && err.data && err.data.error) {
+            errorMessage = err.data.error;
+        } else if (err && err.message) {
+            // Kiểm tra xem có phải lỗi "Failed to fetch" không
+            if (err.message.toLowerCase().includes("failed to fetch")) {
+                errorMessage = "Không thể kết nối tới máy chủ (app.py chưa chạy hoặc có lỗi mạng).";
+            } else {
+                errorMessage = err.message;
+            }
+        }
+        displayPathfindingError(errorMessage);
+    });
+}
 // ----------------------------------- Xử lý thuật toán ------------------------------
+// Trong main.js (khoảng dòng 450 hoặc gần đó)
+
 algorithmSelect.addEventListener("change", function () {
-  algorithm = this.value;
-  alert(
-    "Thuật toán đã được chọn: " +
-      algorithm +
-      "\n Chúng tôi sẽ làm mới đường đi cho bạn 🤖"
-  );
-  getAlgorithm();
+    algorithm = this.value;
+    map.closePopup();
+
+    const mapCenter = map.getCenter();
+
+    L.popup({
+            className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup',
+            autoClose: true, 
+            closeOnClick: true,
+        })
+        .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+        .setContent(`Đã chọn thuật toán: <b>${algorithm}</b>.<br>Đang làm mới đường đi... 🤖`)
+        .openOn(map);
+
+    setTimeout(() => {
+        map.closePopup();
+    }, 5000); // Đóng sau 3 giây
+
+    getAlgorithm(); // Gọi hàm để làm mới đường đi
 });
+
 function getAlgorithm() {
   map.eachLayer(function (layer) {
     if (
@@ -561,7 +636,21 @@ document.getElementById("floodBtn").addEventListener("click", function () {
     map.removeLayer(floodPolyline);
     floodPolyline = null;
   }
-  alert("Click bản đồ để tạo vùng ngập lụt \n ESC để hủy tắt vẽ ngập lụt");
+  map.closePopup(); // Đóng các popup khác nếu có
+  // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+  const mapCenter = map.getCenter();
+  L.popup({
+          className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+          autoClose: true,
+          closeOnClick: true
+      })
+      .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+      .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để bắt đầu vẽ vùng ngập lụt.<br>Nhấn phím <b>ESC</b> để hoàn thành hoặc hủy vẽ.")
+      .openOn(map);
+
+  setTimeout(() => {
+      map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+  }, 5000); // Đóng sau 5 giây
   console.log("Bật chế độ vẽ ngập lụt");
 });
 
@@ -637,7 +726,21 @@ document.getElementById("trafficBtn").addEventListener("click", function () {
     map.removeLayer(trafficPolyline);
     trafficPolyline = null;
   }
-  alert("Click bản đồ để tạo vùng tắc \n ESC để hủy tắt vẽ tắc đường");
+  map.closePopup(); // Đóng các popup khác nếu có
+  // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+  const mapCenter = map.getCenter();
+  L.popup({
+          className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+          autoClose: true,
+          closeOnClick: true
+      })
+      .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+      .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để bắt đầu vẽ đường tắc.<br>Nhấn phím <b>ESC</b> để hoàn thành hoặc hủy vẽ.")
+      .openOn(map);
+
+  setTimeout(() => {
+      map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+  }, 5000); // Đóng sau 5 giây
   console.log("Bật chế độ vẽ vùng tắc");
 });
 
@@ -711,7 +814,21 @@ document.getElementById("banEdgeBtn").addEventListener("click", function () {
     map.removeLayer(banPolyline);
     banPolyline = null;
   }
-  alert("Click bản đồ để cấm đường \n ESC để hủy tắt vẽ cấm đường");
+  map.closePopup(); // Đóng các popup khác nếu có
+  // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+  const mapCenter = map.getCenter();
+  L.popup({
+          className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+          autoClose: true,
+          closeOnClick: true
+      })
+      .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+      .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để bắt đầu vẽ cấm đường.<br>Nhấn phím <b>ESC</b> để hoàn thành hoặc hủy vẽ.")
+      .openOn(map);
+
+  setTimeout(() => {
+      map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+  }, 5000); // Đóng sau 5 giây
   console.log("Bật chế độ cấm đường");
 });
 
@@ -903,14 +1020,28 @@ placeObstacleBtn.addEventListener("click", function () {
   isPlacingObstacle = !isPlacingObstacle;
 
   placeObstacleBtn.textContent = isPlacingObstacle
-    ? "Hủy đặt vật cản"
-    : "Đặt vật cản";
+    ? "Hủy chọn vùng cấm"
+    : "Đặt vùng cấm";
   placeObstacleBtn.classList.toggle("btn-danger", isPlacingObstacle);
   placeObstacleBtn.classList.toggle("btn-warning", !isPlacingObstacle);
 
   if (isPlacingObstacle) {
-    alert("Click vào bản đồ để đặt vật cản");
-  }
+    map.closePopup(); // Đóng các popup khác nếu có
+    // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+    const mapCenter = map.getCenter();
+    L.popup({
+            className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+            autoClose: true,
+            closeOnClick: true
+        })
+        .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+        .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để đặt vùng cấm.")
+        .openOn(map);
+
+    setTimeout(() => {
+        map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+    }, 5000); // Đóng sau 5 giây
+    }
 });
 
 /*-------------------------------------- Xử lý sự kiện Reset -------------------------------------*/
@@ -960,7 +1091,7 @@ function resetMapWithGuest() {
   });
   redrawAllOneWayArrows();
   const placeObstacleBtn = document.getElementById("placeObstacleBtn");
-  placeObstacleBtn.textContent = "Đặt vật cản";
+  placeObstacleBtn.textContent = "Đặt vùng cấm";
   placeObstacleBtn.classList.remove("btn-danger");
   placeObstacleBtn.classList.add("btn-warning");
 }
@@ -1011,7 +1142,7 @@ function resetMapWithAdmin() {
   console.log("TrafficEdges: ", trafficEdges);
   console.log("TrafficEdges: ", floodEdges);
   const placeObstacleBtn = document.getElementById("placeObstacleBtn");
-  placeObstacleBtn.textContent = "Đặt vật cản";
+  placeObstacleBtn.textContent = "Đặt vùng cấm";
   placeObstacleBtn.classList.remove("btn-danger");
   placeObstacleBtn.classList.add("btn-warning");
 }
@@ -1624,7 +1755,6 @@ function handleOneWayEdgeModeClick(clickEvent) {
 
         if (isNaN(uLat) || isNaN(uLon) || isNaN(vLat) || isNaN(vLon)) {
             console.error("Tọa độ của node u hoặc v không hợp lệ để tính điểm giữa cho popup.");
-            alert("Lỗi dữ liệu tọa độ cho cạnh này.");
             return;
         }
 
@@ -1653,13 +1783,25 @@ document.getElementById("toggleOneWayEdgeModeBtn").addEventListener("click", fun
         isTrafficMode = false;
         isFloodMode = false;
 
-        alert("Chế độ đường 1 chiều đã bật.\nClick gần một cạnh để đổi thành đường 1 chiều.\nNhấn ESC để hủy chế độ này.");
-        this.textContent = "Tắt chế độ Đường 1 chiều";
+        map.closePopup(); // Đóng các popup khác nếu có
+        // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+        const mapCenter = map.getCenter();
+        L.popup({
+                className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+                autoClose: true,
+                closeOnClick: true
+            })
+            .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+            .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để chọn đường.<br>Nhấn phím <b>ESC</b> để hoàn thành hoặc hủy chế độ.")
+            .openOn(map);
+          
+        setTimeout(() => {
+            map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+        }, 5000); // Đóng sau 5 giây        this.textContent = "Tắt chế độ Đường 1 chiều";
         this.classList.add("btn-danger");
         this.classList.remove("btn-info");
         map.getContainer().style.cursor = 'pointer'; // Đổi con trỏ chuột
     } else {
-        alert("Chế độ đường 1 chiều đã tắt.");
         this.textContent = "Đường 1 chiều";
         this.classList.remove("btn-danger");
         this.classList.add("btn-info");

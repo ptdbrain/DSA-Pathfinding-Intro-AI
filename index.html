@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" class = "theme-dark">
+<html lang="en" class = "theme-sunset">
   <head>
     <meta charset="UTF-8" />
-    <title>Bản đồ với Node</title>
+    <title>PathFinder</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Import thư viện Leaflet CSS -->
     <link
@@ -11,6 +11,7 @@
     />
     <!-- Import CSS tùy chỉnh -->
     <link rel="stylesheet" href="ui/css/styles.css" />
+    <link rel="icon" type="image/png" href="ui/css/favicon.png" />
   </head>
 
   <body>
@@ -70,11 +71,11 @@
           <!-- Thêm phần đặt vật cản -->
           <div class="control-group">
             <button id="placeObstacleBtn" class="btn btn-warning">
-              Đặt vật cản
+              Đặt vùng cấm
             </button>
             <div class="input-group">
               <label
-                >Bán kính ảnh hưởng (m):
+                >Bán kính ảnh hưởng:
                 <input
                   type="number"
                   id="obstacleRadius"
