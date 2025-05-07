@@ -15,6 +15,9 @@ let obstacleMarkers = []; // Các điểm đặt vật cản
 let isAdmin = false; // Biến toàn cục để xác định chế độ Admin hay Guest
 let showNodes = false; // Xem tất cả các node và edge
 let showEdges = false;
+
+let startPointMarker = null; // Để lưu marker/popup của điểm bắt đầu
+let endPointMarker = null;   // Để lưu marker/popup của điểm kết thúc
 // Xử lý tắc đường
 let trafficLevel; // Biến toàn cục để xác định mức độ tắc đường
 let trafficMarkers = []; // Biến toàn cục để lưu các marker tắc đường
@@ -92,8 +95,11 @@ roleToggle.addEventListener("change", function () {
     isPlacingObstacle = false;
     isTrafficMode = false;
     isFloodMode = false;
+    isOneWayEdgeMode = false;
+    document.getElementById("toggleOneWayEdgeModeBtn").textContent = "Đường 1 chiều";
     selectedPoints = [];
     startPoint = null;
+    map.closePopup();
   }
 });
 
@@ -192,10 +198,16 @@ map.on("click", function (e) {
 
   // Nếu đang là Admin và không trong các chế độ vẽ
   if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode && !isFloodMode) {
-    alert(
-      "Chế độ Admin đang hoạt động.\nBạn không thể tìm đường"
-    );
-    return;
+      map.closePopup(); // Đóng các popup khác nếu có
+      L.popup({
+              className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+              autoClose: true,
+              closeOnClick: true
+          })
+          .setLatLng(e.latlng) // Hiển thị popup tại vị trí Admin vừa click
+          .setContent("<b>Thông báo:</b> Chế độ Admin đang hoạt động. Bạn không thể tìm đường ở chế độ này. Hãy sử dụng các chức năng quản lý hoặc chuyển về chế độ Guest để tìm đường.")
+          .openOn(map);
+      return;
   }
 
   // 1. Chế độ vẽ đường cấm hoặc tắc đường (đều sử dụng polyline)
@@ -224,26 +236,70 @@ map.on("click", function (e) {
   });
 
   if (!closestNode) return;
-  // Kiểm tra số điểm đã chọn
-  if (selectedPoints.length >= 2) {
-    alert("Đã có 2 điểm! Reset để tìm đường mới");
-    console.log("Chỉ được chọn 2 điểm để tìm đường.");
-    return;
-  }
-  if (selectedPoints.length < 2) {
-    // Thêm diểm vào selectdPoints
-    selectedPoints.push(closestNode.node_id);
-    L.circleMarker([closestNode.lat, closestNode.lon], {
-      radius: 6,
-      color: "green",
-      fillColor: "green",
-      fillOpacity: 1,
-    }).addTo(map);
 
-    // Chạy thuật toán tìm đường đi
-    if (selectedPoints.length === 2) {
-      findAndDrawPath();
-    }
+  if (selectedPoints.length === 0) { 
+      selectedPoints.push(closestNode.node_id);
+
+      if (startPointMarker) {
+          map.removeLayer(startPointMarker);
+          startPointMarker = null;
+      }
+
+      startPointMarker = L.circleMarker([closestNode.lat, closestNode.lon], {
+          radius: 4, // Giữ nguyên radius: 4
+          color: "green", // Giữ nguyên màu "green"
+          fillColor: "green",
+          fillOpacity: 0.7,
+          pane: 'markerPane'
+      }).addTo(map)
+        // Thêm class cho popup để style
+        .bindPopup(`<b>Điểm bắt đầu</b>`, { 
+          className: 'point-popup start-point-popup compact-point-popup', // Thêm class compact
+          autoClose: false, // QUAN TRỌNG: Giữ popup này mở
+          closeOnClick: false
+        })
+        .openPopup();
+
+  } else if (selectedPoints.length === 1) { // Chọn điểm kết thúc
+      if (selectedPoints[0] === closestNode.node_id) { // Kiểm tra trùng điểm
+          L.popup({ className: 'error-leaflet-popup synced-leaflet-popup' }) // Thêm synced-leaflet-popup để dùng chung style nền
+              .setLatLng([closestNode.lat, closestNode.lon])
+              .setContent("<b>Lỗi:</b> Điểm cuối không được trùng với điểm đầu. Vui lòng chọn một điểm khác.")
+              .openOn(map);
+          return;
+      }
+
+      selectedPoints.push(closestNode.node_id);
+
+      if (endPointMarker) {
+          map.removeLayer(endPointMarker);
+          endPointMarker = null;
+      }
+
+      endPointMarker = L.circleMarker([closestNode.lat, closestNode.lon], {
+          radius: 4, // Giữ nguyên radius: 4
+          color: "green", // Giữ nguyên màu "green"
+          fillColor: "green",
+          fillOpacity: 0.7,
+          pane: 'markerPane'
+      }).addTo(map)
+        // Thêm class cho popup để style
+        .bindPopup(`<b>Điểm kết thúc</b>`, { 
+            className: 'point-popup end-point-popup compact-point-popup', // Thêm class compact
+            autoClose: false, // QUAN TRỌNG: Giữ popup này mở
+            closeOnClick: false
+        })
+        .openPopup();
+
+      findAndDrawPath(); // Tìm đường khi đã có 2 điểm
+
+  } else { // Đã có 2 điểm
+      // Sử dụng L.popup cho thông báo này
+      L.popup({ className: 'info-leaflet-popup synced-leaflet-popup' }) // Thêm synced-leaflet-popup
+          .setLatLng([closestNode.lat, closestNode.lon]) // Vị trí của điểm click cuối cùng
+          .setContent("Đã có 2 điểm được chọn. Nhấn 'Làm mới' (Reset) để tìm đường mới.")
+          .openOn(map);
+      return;
   }
 });
 
@@ -467,7 +523,7 @@ function findAndDrawPath() {
     })
     .catch((err) => {
       console.error("Lỗi:", err);
-      alert("12");
+      alert("Chưa chạy app.py");
     });
 }
 
@@ -867,6 +923,16 @@ function resetMapWithGuest() {
   isFloodMode = false;
   showNodes = false;
   isOneWayEdgeMode = false;
+  if (startPointMarker) {
+      map.removeLayer(startPointMarker);
+      startPointMarker = null;
+  }
+  if (endPointMarker) {
+      map.removeLayer(endPointMarker);
+      endPointMarker = null;
+  }
+  // Đóng tất cả popup đang mở 
+  map.closePopup();
   map.eachLayer(function (layer) {
       if (
           (layer instanceof L.Polyline && layer.options.color === "green") ||
@@ -1342,7 +1408,7 @@ function addOneWayArrow(sourceNodeId, destNodeId) {
         
         // 1. Vẽ Markers cho Node Đầu và Cuối
         const sourceMarker = L.circleMarker([sLat, sLon], {
-            radius: 8, // Kích thước marker
+            radius: 4, // Kích thước marker
             fillColor: ONE_WAY_ARROW_COLOR,
             color: "#fff", // Màu viền marker
             weight: 2,
@@ -1371,7 +1437,7 @@ function addOneWayArrow(sourceNodeId, destNodeId) {
             patterns: [
                 {
                     offset: 20,       // Bắt đầu vẽ mũi tên đầu tiên sau 20px từ điểm bắt đầu
-                    repeat: '40px',  // Lặp lại mũi tên mỗi 80px
+                    repeat: '20px',  // Lặp lại mũi tên mỗi 80px
                     symbol: L.Symbol.arrowHead({
                         pixelSize: 15,
                         polygon: false,
@@ -1476,47 +1542,77 @@ function handleOneWayEdgeModeClick(clickEvent) {
     const selectedEdge = findClosestEdgeToPoint(clickLatlng);
 
     if (selectedEdge) {
-        const { u, v } = selectedEdge;
+        const { u, v } = selectedEdge; // u và v là các object node từ findClosestEdgeToPoint
 
-        if (!isPhysicallyTwoWayEdge(u.node_id, v.node_id)) {
-            alert("Đây là đường 1 chiều. Bạn hãy chọn đường 2 chiều khác để chuyển thành đường 1 chiều!");
-            map.closePopup();
+        // Đảm bảo u và v có node_id hợp lệ
+        if (!u || typeof u.node_id === 'undefined' || !v || typeof v.node_id === 'undefined') {
+            console.error("Node u hoặc v không hợp lệ từ selectedEdge:", selectedEdge);
             return;
         }
 
+        if (!isPhysicallyTwoWayEdge(u.node_id, v.node_id)) {
+            map.closePopup(); // Đóng các popup khác trước khi hiển thị thông báo này
+
+            const popupLocation = clickLatlng; 
+
+            L.popup({
+                    className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+                    autoClose: true, // Cho phép tự đóng khi mở popup khác hoặc click map
+                    closeOnClick: true // Đóng khi click map
+                })
+                .setLatLng(popupLocation)
+                .setContent("<b>Thông báo:</b> Đây là đường 1 chiều mặc định. Vui lòng chọn đường 2 chiều khác để chuyển thành đường 1 chiều!")
+                .openOn(map);
+            return; // Dừng xử lý tiếp
+        }
         const isUtoV_userSet = oneWayEdges.some(e => e[0] === u.node_id && e[1] === v.node_id);
         const isVtoU_userSet = oneWayEdges.some(e => e[0] === v.node_id && e[1] === u.node_id);
 
-        let statusText = "Đường hai chiều (có thể đặt một chiều).";
-        let statusClass = "status-default"; // Class cho CSS nếu muốn style riêng
+        let currentDirectionText = "Hiện tại: Đường hai chiều.";
+        let nextSourceNodeId, nextDestNodeId;
+        let buttonActionText;
+
+        // Quy ước "Hướng 1" là từ u sang v (theo thứ tự selectedEdge trả về)
+        // và "Hướng 2" là từ v sang u.
+        const Hướng1_Source = u.node_id;
+        const Hướng1_Dest = v.node_id;
+        const Hướng2_Source = v.node_id;
+        const Hướng2_Dest = u.node_id;
 
         if (isUtoV_userSet) {
-            statusText = `Hiện tại (do bạn đặt): ${u.node_id} ➔ ${v.node_id}`;
-            // statusClass = "status-oneway-uv"; // Ví dụ
+            // Hiện tại là Hướng 1 (U -> V), nút sẽ đổi sang Hướng 2 (V -> U)
+            currentDirectionText = `Hiện tại: Một chiều`;
+            nextSourceNodeId = Hướng2_Source;
+            nextDestNodeId = Hướng2_Dest;
+            buttonActionText = `Đổi chiều`;
         } else if (isVtoU_userSet) {
-            statusText = `Hiện tại (do bạn đặt): ${v.node_id} ➔ ${u.node_id}`;
-            // statusClass = "status-oneway-vu"; // Ví dụ
+            // Hiện tại là Hướng 2 (V -> U), nút sẽ đổi sang Hướng 1 (U -> V)
+            currentDirectionText = `Hiện tại: Một chiều`;
+            nextSourceNodeId = Hướng1_Source;
+            nextDestNodeId = Hướng1_Dest;
+            buttonActionText = `Đổi chiều`;
+        } else {
+            // Chưa đặt, nút sẽ đặt chiều mặc định là Hướng 1 (U -> V)
+            currentDirectionText = "Hiện tại: Đường hai chiều."; // Hoặc "Sẵn sàng đặt một chiều."
+            nextSourceNodeId = Hướng1_Source;
+            nextDestNodeId = Hướng1_Dest;
+            buttonActionText = `Đặt một chiều`;
         }
 
         let popupContent = `
             <div class="custom-leaflet-popup">
-                <h5>Cạnh: ${u.node_id} – ${v.node_id}</h5>
-                <small class="popup-status ${statusClass}">${statusText}</small>
+                <h5>Điều chỉnh hướng cho đoạn đường</h5>
+                <small class="popup-status">${currentDirectionText}</small>
                 <hr class="popup-hr">
-                <p>Chọn hướng một chiều mới:</p>
-                <button class="btn btn-primary btn-popup" onclick="setOneWayDirection(${u.node_id}, ${v.node_id}, ${u.node_id}, ${v.node_id})">
-                    ${u.node_id} ➔ ${v.node_id}
-                </button>
-                <button class="btn btn-primary btn-popup" onclick="setOneWayDirection(${v.node_id}, ${u.node_id}, ${u.node_id}, ${v.node_id})">
-                    ${v.node_id} ➔ ${u.node_id}
+                <button class="btn btn-primary btn-popup" onclick="setOneWayDirection(${nextSourceNodeId}, ${nextDestNodeId}, ${u.node_id}, ${v.node_id})">
+                    ${buttonActionText}
                 </button>
         `;
 
         if (isUtoV_userSet || isVtoU_userSet) {
             popupContent += `
-                <hr class="popup-hr">
-                <button class="btn btn-danger btn-popup" onclick="clearOneWaySetting(${u.node_id}, ${v.node_id})">
-                    Xóa cài đặt một chiều (Trở lại 2 chiều)
+                <button class="btn btn-danger btn-popup" style="margin-top: 8px;" onclick="clearOneWaySetting(${u.node_id}, ${v.node_id})">
+                    Xóa một chiều
                 </button>`;
         }
         popupContent += `</div>`;
@@ -1528,7 +1624,7 @@ function handleOneWayEdgeModeClick(clickEvent) {
 
         if (isNaN(uLat) || isNaN(uLon) || isNaN(vLat) || isNaN(vLon)) {
             console.error("Tọa độ của node u hoặc v không hợp lệ để tính điểm giữa cho popup.");
-            alert("Không thể hiển thị tùy chọn cho cạnh này do lỗi dữ liệu tọa độ.");
+            alert("Lỗi dữ liệu tọa độ cho cạnh này.");
             return;
         }
 
@@ -1540,16 +1636,13 @@ function handleOneWayEdgeModeClick(clickEvent) {
             .openOn(map);
 
     } else {
-        
+
     }
 }
 
 
 document.getElementById("toggleOneWayEdgeModeBtn").addEventListener("click", function () {
-    if (!isAdmin) {
-        alert("Chức năng này chỉ dành cho Admin.");
-        return;
-    }
+
     isOneWayEdgeMode = !isOneWayEdgeMode;
 
     // Tắt các chế độ vẽ khác nếu có
@@ -1560,13 +1653,13 @@ document.getElementById("toggleOneWayEdgeModeBtn").addEventListener("click", fun
         isTrafficMode = false;
         isFloodMode = false;
 
-        alert("Chế độ ĐẶT ĐƯỜNG MỘT CHIỀU đã BẬT.\nClick gần một cạnh để chọn hướng.\nNhấn ESC để hủy chế độ này.");
+        alert("Chế độ đường 1 chiều đã bật.\nClick gần một cạnh để đổi thành đường 1 chiều.\nNhấn ESC để hủy chế độ này.");
         this.textContent = "Tắt chế độ Đường 1 chiều";
         this.classList.add("btn-danger");
         this.classList.remove("btn-info");
         map.getContainer().style.cursor = 'pointer'; // Đổi con trỏ chuột
     } else {
-        alert("Chế độ ĐẶT ĐƯỜNG MỘT CHIỀU đã TẮT.");
+        alert("Chế độ đường 1 chiều đã tắt.");
         this.textContent = "Đường 1 chiều";
         this.classList.remove("btn-danger");
         this.classList.add("btn-info");

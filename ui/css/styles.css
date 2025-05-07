@@ -419,3 +419,82 @@ input[type="number"] {
   background-color: transparent !important;
   /* Bỏ nền khi hover nếu có */
 }
+
+/* ----- TÙY CHỈNH CHUNG CHO CÁC POPUP (TRỪ POPUP ĐƯỜNG MỘT CHIỀU ĐÃ CÓ CLASS RIÊNG) ----- */
+/* Style cho popup nhỏ gọn hơn */
+.compact-point-popup .leaflet-popup-content-wrapper {
+  padding: 5px 8px;
+  /* Giảm padding */
+  min-width: 120px;
+  /* Đặt chiều rộng tối thiểu nếu cần */
+  max-width: 180px;
+  /* Giới hạn chiều rộng tối đa */
+  font-size: 0.8rem;
+  /* Giảm cỡ chữ */
+  line-height: 1.4;
+  /* Giảm khoảng cách dòng */
+}
+
+.compact-point-popup .leaflet-popup-content b,
+.compact-point-popup .leaflet-popup-content strong {
+  font-size: 0.85rem;
+  /* Cỡ chữ cho phần chữ đậm */
+  display: block;
+  /* Để <br> hoạt động tốt hơn */
+  margin-bottom: 2px;
+  /* Khoảng cách nhỏ sau chữ đậm */
+}
+
+.compact-point-popup .leaflet-popup-content br {
+  display: none;
+  /* Ẩn <br> nếu muốn tiêu đề và ID trên cùng một dòng để tiết kiệm không gian */
+  /* Hoặc điều chỉnh margin/padding của các phần tử khác */
+}
+
+.compact-point-popup .leaflet-popup-content {
+  margin: 0;
+  /* Bỏ margin mặc định của content nếu có */
+}
+
+/* Đảm bảo các popup này vẫn kế thừa style nền, bo góc từ synced-leaflet-popup nếu bạn muốn */
+.error-leaflet-popup.compact-point-popup .leaflet-popup-content-wrapper,
+.info-leaflet-popup.compact-point-popup .leaflet-popup-content-wrapper,
+.start-point-popup.compact-point-popup .leaflet-popup-content-wrapper,
+/* Áp dụng cho điểm bắt đầu */
+.end-point-popup.compact-point-popup .leaflet-popup-content-wrapper {
+  /* Áp dụng cho điểm kết thúc */
+  /* Các style này có thể được kế thừa từ .synced-leaflet-popup .leaflet-popup-content-wrapper */
+  /* Nếu không, bạn cần thêm lại các thuộc tính như background-color, color, border-radius ở đây */
+  /* Ví dụ: */
+  background-color: var(--panel-bg);
+  color: var(--text-color);
+  border-radius: var(--border-radius);
+  /* Giảm bo góc nếu muốn */
+  box-shadow: 0 1px 5px var(--panel-shadow);
+  /* Giảm đổ bóng */
+}
+
+.compact-point-popup .leaflet-popup-tip {
+  /* Tương tự, kế thừa hoặc style lại tip nếu cần */
+  background: var(--panel-bg);
+}
+
+
+/* Điều chỉnh nút đóng cho popup nhỏ hơn nếu cần */
+.compact-point-popup a.leaflet-popup-close-button {
+  padding: 4px 4px 0 0;
+  /* Giảm padding nút đóng */
+  font-size: 14px;
+  /* Giảm kích thước font nút đóng */
+}
+
+/* Màu sắc cho chữ "Điểm bắt đầu" và "Điểm kết thúc" vẫn như cũ */
+.start-point-popup .leaflet-popup-content strong {
+  color: var(--success);
+  /* Hoặc màu bạn đã chọn, ví dụ: #007bff cho xanh dương */
+}
+
+.end-point-popup .leaflet-popup-content strong {
+  color: var(--danger);
+  /* Hoặc màu bạn đã chọn, ví dụ: #dc3545 cho đỏ */
+}
