@@ -1,43 +1,99 @@
-/* Reset CSS cho body và html */
+:root {
+  --bg-color: #fdf6f0;
+  --panel-bg: #ffffff;
+  --panel-shadow: rgba(0, 0, 0, 0.1);
+  --text-color: #333333;
+
+  --primary: #7ec8e3;
+  --secondary: #f8b195;
+  --success: #a8e6cf;
+  --danger: #ff8b94;
+  --warning: #ffd3b6;
+
+  --toggle-bg: #b2dfdb;
+  --toggle-checked-bg: #ffab91;
+
+  --border-radius: 12px;
+  --control-gap: 16px;
+  --control-padding: 14px;
+}
+
+.theme-dark {
+  --bg-color: #181818;
+  --panel-bg: #262626;
+  --panel-shadow: rgba(0, 0, 0, 0.5);
+  --text-color: #f0f0f0;
+
+  --primary: #82b1ff;
+  --secondary: #ffab91;
+  --success: #81c784;
+  --danger: #e57373;
+  --warning: #ffb74d;
+
+  --toggle-bg: #4db6ac;
+  --toggle-checked-bg: #f06292;
+}
+
+.theme-sunset {
+  --bg-color: #fff3e0;
+  --panel-bg: #ffe0b2;
+  --panel-shadow: rgba(255, 112, 67, 0.3);
+  --text-color: #4e342e;
+
+  --primary: #ff7043;
+  --secondary: #d7ccc8;
+  --success: #a1887f;
+  --danger: #e64a19;
+  --warning: #ffcc80;
+
+  --toggle-bg: #ff8a65;
+  --toggle-checked-bg: #f44336;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  transition: background 0.3s, color 0.3s;
 }
 
-/* Style cho bản đồ */
 #map {
   height: 100vh;
   width: 100%;
 }
 
-/* Style cho control panel chính */
 .control-panel {
   position: absolute;
   top: 20px;
   right: 20px;
-  z-index: 1000;
-  background-color: #ffffff;
+  width: 320px;
+  background-color: var(--panel-bg);
   padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-  width: 300px;
-  font-family: "Arial", sans-serif;
+  border-radius: var(--border-radius);
+  box-shadow: 0 6px 12px var(--panel-shadow);
+  z-index: 1000;
 }
 
-/* Style cho phần header của panel */
-.panel-header {
-  margin-bottom: 20px;
-  text-align: center;
+.control-panel h5 {
+  margin-top: 0;
+  color: var(--text-color);
+  font-size: 1.1rem;
 }
 
-/* Style cho toggle switch */
+.control-group {
+  margin-bottom: var(--control-gap);
+}
+
 .toggle-switch {
   position: relative;
-  width: 100px;
-  height: 34px;
+  width: 110px;
+  height: 38px;
   margin: 0 auto;
+  overflow: visible;
 }
 
 .toggle-input {
@@ -46,148 +102,557 @@ body {
   height: 0;
 }
 
-/* Style cho toggle slider */
 .toggle-slider {
   position: absolute;
+  inset: 0;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #4caf50;
-  transition: 0.4s;
-  border-radius: 34px;
-  overflow: hidden;
+  background-color: var(--toggle-bg);
+  border-radius: 38px;
+  transition: background-color 0.4s;
 }
 
-/* Style cho nút trượt trên toggle */
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
+  height: 30px;
+  width: 30px;
   left: 4px;
   bottom: 4px;
-  background-color: white;
-  transition: 0.4s;
+  background-color: #fff;
   border-radius: 50%;
+  transition: transform 0.4s;
 }
 
-/* Style cho nhãn Guest/Admin trên toggle */
 .toggle-slider:after {
   content: "Guest";
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 60%;
   transform: translate(-50%, -50%);
-  color: white;
+  color: #fff;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 13px;
 }
 
-/* Style cho trạng thái checked của toggle */
-.toggle-input:checked + .toggle-slider {
-  background-color: #f44336;
+.toggle-input:checked+.toggle-slider {
+  background-color: var(--toggle-checked-bg);
 }
 
-.toggle-input:checked + .toggle-slider:before {
-  transform: translateX(65px);
+.toggle-input:checked+.toggle-slider:before {
+  transform: translateX(70px);
 }
 
-.toggle-input:checked + .toggle-slider:after {
+.toggle-input:checked+.toggle-slider:after {
   content: "Admin";
+  left: 30%;
 }
 
-/* Style cho các panel điều khiển */
-.guest-controls,
-.admin-controls {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+.theme-selector,
+.algorithm-select,
+input[type="number"] {
+  width: 100%;
+  padding: var(--control-padding);
+  margin-bottom: var(--control-gap);
+  border: 2px solid var(--primary);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
-/* Style cho trạng thái ẩn của guest controls */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: var(--control-gap);
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: #fff;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--panel-shadow);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: #fff;
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: #fff;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: #fff;
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  color: #fff;
+}
+
 .guest-controls.hide {
   display: none;
-  opacity: 0;
-  transform: translateX(-100%);
 }
 
-/* Style cho admin controls */
 .admin-controls {
   display: none;
-  opacity: 0;
-  transform: translateX(100%);
 }
 
 .admin-controls.show {
   display: block;
-  opacity: 1;
-  transform: translateX(0);
 }
 
-/* Style cho các phần trong panel */
-.panel-section {
-  margin-bottom: 20px;
+@media (max-width: 480px) {
+  .control-panel {
+    width: 92%;
+    right: 4%;
+    top: 10px;
+    padding: 15px;
+  }
+
+  .btn {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+
+  .toggle-switch {
+    width: 100px;
+    height: 34px;
+  }
+
+  .toggle-slider:before {
+    height: 26px;
+    width: 26px;
+  }
 }
 
-/* Style cho dropdown chọn thuật toán */
-.algorithm-select {
-  width: 100%;
+/* Theme selection button */
+.theme-toggle-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: var(--primary);
   padding: 10px;
-  margin-bottom: 15px;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  background-color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 
-/* Style chung cho các nút */
-.btn {
-  display: block;
+.theme-toggle-btn:hover {
+  background-color: var(--secondary);
+}
+
+/* Theme dropdown */
+.theme-dropdown {
+  display: none;
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  background-color: var(--panel-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  z-index: 1000;
+}
+
+.theme-dropdown button {
   width: 100%;
   padding: 12px;
-  margin-bottom: 10px;
+  text-align: left;
+  background-color: var(--bg-color);
   border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: var(--text-color);
+  font-size: 14px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
 }
 
-/* Style cho các loại nút khác nhau */
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-}
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-}
-.btn-danger {
-  background-color: #dc3545;
-  color: white;
-}
-.btn-warning {
-  background-color: #ffc107;
-  color: black;
-}
-.btn-success {
-  background-color: #28a745;
+.theme-dropdown button:hover {
+  background-color: var(--primary);
   color: white;
 }
 
-/* Style cho nhóm điều khiển */
-.control-group {
-  margin-bottom: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+.theme-toggle-btn.active+.theme-dropdown {
+  display: block;
 }
 
-/* Style cho nhóm radio buttons */
-.radio-group {
+.admin-controls {
+  max-height: 307px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.admin-controls::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-controls::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 2px;
+}
+
+.admin-controls::-webkit-scrollbar-thumb:hover {
+  background-color: #999;
+}
+
+/* styles.css */
+
+/* ----- Tùy chỉnh Popup của Leaflet ----- */
+
+/* Container chính của popup do Leaflet tạo */
+.synced-leaflet-popup .leaflet-popup-content-wrapper {
+  background-color: var(--panel-bg);
+  /* Đồng bộ màu nền với control panel */
+  color: var(--text-color);
+  /* Đồng bộ màu chữ */
+  border-radius: var(--border-radius);
+  /* Đồng bộ bo góc */
+  box-shadow: 0 4px 12px var(--panel-shadow);
+  /* Đồng bộ đổ bóng */
+  padding: 10px;
+  /* Giảm padding mặc định của Leaflet một chút nếu cần */
+}
+
+/* Phần mũi tên (tip) của popup */
+.synced-leaflet-popup .leaflet-popup-tip {
+  background: var(--panel-bg);
+  /* Đồng bộ màu nền cho mũi tên */
+  /* box-shadow không cần thiết ở đây hoặc tùy chỉnh nếu muốn */
+}
+
+/* Nội dung bên trong mà chúng ta tự định nghĩa */
+.custom-leaflet-popup {
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  /* Đảm bảo font chữ đồng bộ */
+  line-height: 1.6;
+}
+
+.custom-leaflet-popup h5 {
+  /* Tiêu đề "Cạnh: X - Y" */
+  margin-top: 5px;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+  /* LUÔN LÀ MÀU ĐEN/XÁM ĐẬM */
+  /* Hoặc dùng #000000 cho màu đen tuyền */
+  font-weight: 600;
+}
+
+.custom-leaflet-popup .popup-status {
+  /* Dòng trạng thái */
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  /* LUÔN LÀ MÀU ĐEN/XÁM ĐẬM */
+  /* Hoặc dùng #000000 !important; cho màu đen tuyền */
+  opacity: 0.9;
+}
+.custom-leaflet-popup .popup-hr {
+  border: none;
+  border-top: 1px solid rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+  /* Tạo đường kẻ mờ */
+  /* Cần định nghĩa --text-color-rgb nếu muốn dùng, ví dụ 51,51,51 */
+  /* Hoặc dùng màu cố định: border-top: 1px solid #e0e0e0; */
   margin: 10px 0;
 }
 
-.radio-group label {
-  margin-right: 15px;
+.theme-dark .custom-leaflet-popup .popup-hr {
+  /* Đường kẻ cho theme tối */
+  border-top: 1px solid rgba(var(--text-color-rgb, 240, 240, 240), 0.15);
+  /* Ví dụ: 240,240,240 */
+  /* Hoặc dùng màu cố định: border-top: 1px solid #444; */
+}
+
+
+.custom-leaflet-popup p {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+/* Tùy chỉnh thêm cho các nút bên trong popup nếu cần */
+.custom-leaflet-popup .btn-popup {
+  width: calc(100% - 10px);
+  /* Làm cho nút hơi thụt vào một chút */
+  margin: 5px auto;
+  /* Căn giữa và tạo khoảng cách */
+  padding: 8px 12px;
+  /* Điều chỉnh padding cho nút trong popup */
+  font-size: 0.9rem;
+  /* Cỡ chữ nút trong popup */
+  display: block;
+  /* Đảm bảo nút chiếm toàn bộ chiều rộng đã cho */
+}
+
+/* Nút đóng mặc định của Leaflet */
+.synced-leaflet-popup a.leaflet-popup-close-button {
+  color: var(--text-color) !important;
+  /* Màu nút đóng */
+  padding: 8px 8px 0 0;
+  transition: color 0.2s ease-in-out;
+}
+
+.synced-leaflet-popup a.leaflet-popup-close-button:hover {
+  color: var(--danger) !important;
+  /* Màu nút đóng khi hover */
+  background-color: transparent !important;
+  /* Bỏ nền khi hover nếu có */
+}
+
+/* Style cho popup nhỏ gọn hơn */
+.compact-point-popup .leaflet-popup-content-wrapper {
+  padding: 5px 8px;
+  /* Giảm padding */
+  min-width: 120px;
+  /* Đặt chiều rộng tối thiểu nếu cần */
+  max-width: 180px;
+  /* Giới hạn chiều rộng tối đa */
+  font-size: 0.8rem;
+  /* Giảm cỡ chữ */
+  line-height: 1.4;
+  /* Giảm khoảng cách dòng */
+}
+
+.compact-point-popup .leaflet-popup-content b,
+.compact-point-popup .leaflet-popup-content strong {
+  font-size: 0.85rem;
+  /* Cỡ chữ cho phần chữ đậm */
+  display: block;
+  /* Để <br> hoạt động tốt hơn */
+  margin-bottom: 2px;
+  /* Khoảng cách nhỏ sau chữ đậm */
+}
+
+.compact-point-popup .leaflet-popup-content br {
+  display: none;
+  /* Ẩn <br> nếu muốn tiêu đề và ID trên cùng một dòng để tiết kiệm không gian */
+  /* Hoặc điều chỉnh margin/padding của các phần tử khác */
+}
+
+.compact-point-popup .leaflet-popup-content {
+  margin: 0;
+  /* Bỏ margin mặc định của content nếu có */
+}
+
+/* Đảm bảo các popup này vẫn kế thừa style nền, bo góc từ synced-leaflet-popup nếu bạn muốn */
+.error-leaflet-popup.compact-point-popup .leaflet-popup-content-wrapper,
+.info-leaflet-popup.compact-point-popup .leaflet-popup-content-wrapper,
+.start-point-popup.compact-point-popup .leaflet-popup-content-wrapper,
+/* Áp dụng cho điểm bắt đầu */
+.end-point-popup.compact-point-popup .leaflet-popup-content-wrapper {
+  /* Áp dụng cho điểm kết thúc */
+  /* Các style này có thể được kế thừa từ .synced-leaflet-popup .leaflet-popup-content-wrapper */
+  /* Nếu không, bạn cần thêm lại các thuộc tính như background-color, color, border-radius ở đây */
+  /* Ví dụ: */
+  background-color: var(--panel-bg);
+  color: var(--text-color);
+  border-radius: var(--border-radius);
+  /* Giảm bo góc nếu muốn */
+  box-shadow: 0 1px 5px var(--panel-shadow);
+  /* Giảm đổ bóng */
+}
+
+.compact-point-popup .leaflet-popup-tip {
+  /* Tương tự, kế thừa hoặc style lại tip nếu cần */
+  background: var(--panel-bg);
+}
+
+
+/* Điều chỉnh nút đóng cho popup nhỏ hơn nếu cần */
+.compact-point-popup a.leaflet-popup-close-button {
+  padding: 4px 4px 0 0;
+  /* Giảm padding nút đóng */
+  font-size: 14px;
+  /* Giảm kích thước font nút đóng */
+}
+
+/* Màu sắc cho chữ "Điểm bắt đầu" và "Điểm kết thúc" vẫn như cũ */
+.start-point-popup .leaflet-popup-content strong {
+  color: var(--success);
+  /* Hoặc màu bạn đã chọn, ví dụ: #007bff cho xanh dương */
+}
+
+.end-point-popup .leaflet-popup-content strong {
+  color: var(--danger);
+  /* Hoặc màu bạn đã chọn, ví dụ: #dc3545 cho đỏ */
+}
+
+/* styles.css */
+/* ... (các style hiện có của bạn) ... */
+
+/* ----- Kiểu Mới cho Collapsible Sections (Dễ nhìn hơn) ----- */
+
+.collapsible-group {
+  margin-bottom: calc(var(--control-gap) / 2);
+  /* Khoảng cách nhỏ hơn giữa các nhóm */
+  /* Bỏ viền của group đi để thoáng hơn */
+  border-radius: calc(var(--border-radius) - 6px);
+  /* Bo góc nhẹ nhàng nếu muốn giữ lại chút */
+  background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.03);
+  /* Nền rất nhẹ cho cả group */
+  overflow: hidden;
+  /* Giữ lại để bo góc hoạt động */
+}
+
+.theme-dark .collapsible-group {
+  background-color: rgba(var(--text-color-rgb, 240, 240, 240), 0.05);
+}
+
+
+.collapsible-trigger {
+  /* Ghi đè lại style của .btn nếu cần, hoặc bỏ class .btn trong HTML */
+  display: block;
+  /* Đảm bảo chiếm cả dòng */
+  width: 100%;
+  background-color: transparent;
+  /* Nền trong suốt, hòa vào group */
+  color: var(--text-color);
+  /* Màu chữ theo theme */
+  padding: 12px 15px;
+  /* Tăng padding cho dễ nhấn */
+  text-align: left;
+  font-weight: 600;
+  /* Chữ đậm hơn một chút */
+  font-size: 0.95rem;
+  /* Cỡ chữ */
+  border: none;
+  /* Bỏ viền */
+  border-bottom: 1px solid transparent;
+  /* Thêm đường viền ẩn để giữ layout ổn định khi hover */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+  margin-bottom: 0 !important;
+  /* Ghi đè margin của .btn nếu có */
+}
+
+.collapsible-trigger:hover {
+  background-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.05);
+  /* Hiệu ứng hover nhẹ */
+  border-bottom-color: rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+  /* Hiện viền dưới nhẹ khi hover */
+}
+
+.theme-dark .collapsible-trigger:hover {
+  background-color: rgba(var(--text-color-rgb, 240, 240, 240), 0.08);
+  border-bottom-color: rgba(var(--text-color-rgb, 240, 240, 240), 0.2);
+}
+
+/* Icon mũi tên mới (sử dụng + và - hoặc chevron) */
+.collapsible-trigger::after {
+  /* content: '+'; */
+  /* Dấu cộng khi đóng */
+  content: '\276F';
+  /* Chevron kiểu > */
+  font-family: sans-serif;
+  /* Đảm bảo dấu hiển thị đúng */
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%) rotate(0deg);
+  transition: transform 0.3s ease;
+  font-size: 1.1em;
+  /* Kích thước icon */
+  font-weight: bold;
+  color: var(--primary);
+  /* Màu icon theo màu primary */
+  opacity: 0.8;
+}
+
+.collapsible-trigger.active::after {
+  /* content: '−'; */
+  /* Dấu trừ khi mở */
+  transform: translateY(-50%) rotate(90deg);
+  /* Xoay chevron xuống */
+}
+
+
+/* Nội dung có thể thu gọn/mở rộng */
+.collapsible-content {
+  padding: 20px 15px 15px 15px;
+  /* Tăng padding trên cùng để tách khỏi trigger */
+  display: none;
+  /* Mặc định ẩn */
+  background-color: transparent;
+  /* Bỏ nền riêng, dùng nền của group */
+  border-top: 1px solid rgba(var(--text-color-rgb, 0, 0, 0), 0.1);
+  /* Đường kẻ mỏng phân cách với trigger */
+}
+
+.theme-dark .collapsible-content {
+  border-top: 1px solid rgba(var(--text-color-rgb, 240, 240, 240), 0.15);
+}
+
+/* Style cho các control-group bên trong collapsible-content */
+.collapsible-content .control-group {
+  margin-bottom: var(--control-gap);
+  /* Khoảng cách giữa các control */
+}
+
+.collapsible-content .control-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Style cho input-group và label bên trong */
+.collapsible-content .input-group {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  /* Thêm khoảng cách dưới input group */
+}
+
+.collapsible-content .input-group label {
+  display: block;
+  margin-bottom: 6px;
+  /* Khoảng cách giữa label và input */
+  font-size: 0.85rem;
+  font-weight: 500;
+  /* Hơi đậm một chút */
+  color: var(--text-color);
+  opacity: 0.9;
+}
+
+.collapsible-content .input-group input[type="number"] {
+  width: 100%;
+  /* Input chiếm hết chiều rộng */
+  padding: 10px;
+  /* Giảm padding của input một chút */
+  /* Kế thừa các style khác từ rule chung cho input */
+}
+
+/* Style cho các nút bên trong collapsible-content */
+.collapsible-content .btn {
+  margin-bottom: 10px;
+  /* Khoảng cách giữa các nút bên trong */
+}
+
+.collapsible-content .btn:last-child {
+  margin-bottom: 0;
+}
+
+.collapsible-content .control-group>.btn:not(:last-child) {
+  /* Thêm khoảng cách phải nếu nút không phải nút cuối cùng trong group,
+        hoặc giữ margin-bottom nếu chúng xếp chồng lên nhau */
+  /* margin-right: 10px; */
+  /* Nếu nút nằm cùng hàng */
 }
