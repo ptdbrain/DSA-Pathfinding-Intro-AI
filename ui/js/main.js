@@ -34,12 +34,61 @@ let floodLine = [];
 let floodEdges = []; // Biến toàn cục để lưu các cạnh ngập
 
 let algorithmSelect = document.getElementById("algorithmSelect");
+
+// Biến toàn cục để lưu trữ tọa độ đa giác ranh giới Phường Trúc Bạch
+let trucBachBoundaryLatLngs = null;
+let trucBachGeoJsonFeature = null; 
+
+async function loadTrucBachBoundary() {
+    try {
+        const response = await fetch('../../data/truc_bach_boundary.geojson'); 
+        if (!response.ok) {
+            throw new Error(`Lỗi HTTP! Status: ${response.status}`);
+        }
+        const geojsonData = await response.json();
+
+        if (geojsonData.features && geojsonData.features.length > 0) {
+            const feature = geojsonData.features[0];
+            trucBachGeoJsonFeature = feature;
+
+            if (feature.geometry) {
+                let rawCoords;
+                if (feature.geometry.type === 'Polygon') {
+                    rawCoords = feature.geometry.coordinates[0]; 
+                } else if (feature.geometry.type === 'MultiPolygon') {
+                    rawCoords = feature.geometry.coordinates[0][0];
+                    console.warn("Ranh giới Phường Trúc Bạch là MultiPolygon. Hiện tại đang sử dụng đa giác đầu tiên. Hãy kiểm tra xem có phù hợp không.");
+                } else {
+                    console.error('Dữ liệu GeoJSON không phải là Polygon hoặc MultiPolygon.');
+                    return;
+                }
+                trucBachBoundaryLatLngs = rawCoords.map(coord => L.latLng(coord[1], coord[0]));
+                console.log('Ranh giới Phường Trúc Bạch đã được tải và xử lý thành công.');
+                L.polygon(trucBachBoundaryLatLngs, {
+                    color: 'purple',         // màu viền là tím
+                    weight: 2,               // độ dày viền
+                    fillOpacity: 0.04,        // độ trong suốt nền 
+                    dashArray: '5, 5'        
+                })
+                .addTo(map);
+            } else {
+                console.error('Feature trong GeoJSON không có thông tin geometry.');
+            }
+        } else {
+            console.error('File GeoJSON không hợp lệ hoặc không chứa features.');
+        }
+    } catch (error) {
+        console.error('Không thể tải hoặc xử lý file ranh giới Phường Trúc Bạch:', error);
+    }
+}
 // Khởi tạo bản đồ
 const map = L.map("map").setView([21.0453, 105.8426], 16);
 L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap contributors",
   maxZoom: 19,
 }).addTo(map);
+
+loadTrucBachBoundary();
 
 // Xử lý chuyển đổi Guest/Admin
 const roleToggle = document.getElementById("roleToggle");
@@ -199,11 +248,67 @@ document.getElementById("togglePaths").addEventListener("click", () => {
 });
 
 /*----------------------------------Xử lý sự kiện trên bàn đồ------------------------------------------------*/
+function isPointInPolygon(point, polygonVertices) {
+  if (!point || !polygonVertices || polygonVertices.length < 3) {
+      return false;
+  }
+
+  var x = point.lng; // Kinh độ của điểm
+  var y = point.lat; // Vĩ độ của điểm
+
+  var inside = false;
+  // lặp qua tất cả các cạnh của đa giác
+  // j là đỉnh trước, i là đỉnh hiện tại
+  for (var i = 0, j = polygonVertices.length - 1; i < polygonVertices.length; j = i++) {
+      var xi = polygonVertices[i].lng; // Kinh độ của đỉnh i
+      var yi = polygonVertices[i].lat; // Vĩ độ của đỉnh i
+      var xj = polygonVertices[j].lng; // Kinh độ của đỉnh j (đỉnh trước đó)
+      var yj = polygonVertices[j].lat; // Vĩ độ của đỉnh j (đỉnh trước đó)
+
+      var intersect = ((yi > y) !== (yj > y)) &&
+          (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+      if (intersect) {
+          inside = !inside;
+      }
+  }
+  return inside;
+}
 // Xử lý click trên bản đồ
 map.on("click", function (e) {
-  // Lấy tọa độ điẻm chấm trên bản đổ
   const { lat, lng } = e.latlng;
+  const clickedLatLng = e.latlng;
+  if (!trucBachBoundaryLatLngs) {
+  } else {
+      let isInsideTrucBach;
+      try {
+          isInsideTrucBach = isPointInPolygon(clickedLatLng, trucBachBoundaryLatLngs);
+      } catch (error) {
+          console.error("Lỗi khi sử dụng L.PolyUtil.isPointInsidePolygon. Đảm bảo Leaflet đã tải đầy đủ.", error);
+          isInsideTrucBach = true; 
+      }
 
+      if (!isInsideTrucBach) {
+          map.closePopup(); 
+          L.popup({
+              className: 'warning-leaflet-popup synced-leaflet-popup compact-point-popup',
+              autoClose: true,
+              closeOnClick: true
+          })
+          .setLatLng(clickedLatLng)
+          .setContent("<b>Cảnh báo:</b> Vị trí bạn chọn nằm ngoài khu vực Phường Trúc Bạch. Vui lòng thao tác trong khu vực được hỗ trợ.")
+          .openOn(map);
+
+          setTimeout(() => {
+              const currentPopup = map._popup;
+              if (currentPopup && currentPopup.getContent().includes("nằm ngoài khu vực Phường Trúc Bạch")) {
+                  map.closePopup();
+              }
+          }, 4000); 
+
+          return;
+      }
+  }
   if (isAdmin && isOneWayEdgeMode) { // Ưu tiên chế độ này
     handleOneWayEdgeModeClick(e); // Truyền cả event `e`
     return;
@@ -501,8 +606,6 @@ document.addEventListener("keydown", function (e) {
 
 // Hàm truyền đối số cho backend
 function displayPathfindingError(errorMessage) {
-    map.closePopup();
-
     let popupLocation;
     if (selectedPoints && selectedPoints.length === 2) {
         const node1 = nodes.find(n => n.node_id === selectedPoints[0]);
@@ -527,7 +630,7 @@ function displayPathfindingError(errorMessage) {
             closeOnClick: true
         })
         .setLatLng(popupLocation)
-        .setContent(`<b>Lỗi tìm đường:</b><br>${errorMessage}`)
+        .setContent(`<b>Không tìm thấy đường đi</b>`)
         .openOn(map);
 }
 
