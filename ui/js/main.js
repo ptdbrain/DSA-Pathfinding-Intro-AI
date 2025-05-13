@@ -25,6 +25,62 @@ let trafficPolyline = null; // Biến toàn cục để lưu polyline tắc đư
 let isTrafficMode = false; // Biến toàn cục để xác định chế độ tắc đường
 let trafficLine = [];
 let trafficEdges = []; // Biến toàn cục để lưu các cạnh tắc đường
+
+let floodLevel; // Biến toàn cục để xác định mức độ ngập
+let floodMarkers = []; // Biến toàn cục để lưu các marker ngập
+let floodPolyline = null; // Biến toàn cục để lưu polyline ngập
+let isFloodMode = false; // Biến toàn cục để xác định chế độ ngập
+let floodLine = [];
+let floodEdges = []; // Biến toàn cục để lưu các cạnh ngập
+
+let algorithmSelect = document.getElementById("algorithmSelect");
+
+// Biến toàn cục để lưu trữ tọa độ đa giác ranh giới Phường Trúc Bạch
+let trucBachBoundaryLatLngs = null;
+let trucBachGeoJsonFeature = null; 
+
+async function loadTrucBachBoundary() {
+    try {
+        const response = await fetch('../../data/truc_bach_boundary.geojson'); 
+        if (!response.ok) {
+            throw new Error(`Lỗi HTTP! Status: ${response.status}`);
+        }
+        const geojsonData = await response.json();
+
+        if (geojsonData.features && geojsonData.features.length > 0) {
+            const feature = geojsonData.features[0];
+            trucBachGeoJsonFeature = feature;
+
+            if (feature.geometry) {
+                let rawCoords;
+                if (feature.geometry.type === 'Polygon') {
+                    rawCoords = feature.geometry.coordinates[0]; 
+                } else if (feature.geometry.type === 'MultiPolygon') {
+                    rawCoords = feature.geometry.coordinates[0][0];
+                    console.warn("Ranh giới Phường Trúc Bạch là MultiPolygon. Hiện tại đang sử dụng đa giác đầu tiên. Hãy kiểm tra xem có phù hợp không.");
+                } else {
+                    console.error('Dữ liệu GeoJSON không phải là Polygon hoặc MultiPolygon.');
+                    return;
+                }
+                trucBachBoundaryLatLngs = rawCoords.map(coord => L.latLng(coord[1], coord[0]));
+                console.log('Ranh giới Phường Trúc Bạch đã được tải và xử lý thành công.');
+                L.polygon(trucBachBoundaryLatLngs, {
+                    color: 'purple',         // màu viền là tím
+                    weight: 2,               // độ dày viền
+                    fillOpacity: 0.04,        // độ trong suốt nền 
+                    dashArray: '5, 5'        
+                })
+                .addTo(map);
+            } else {
+                console.error('Feature trong GeoJSON không có thông tin geometry.');
+            }
+        } else {
+            console.error('File GeoJSON không hợp lệ hoặc không chứa features.');
+        }
+    } catch (error) {
+        console.error('Không thể tải hoặc xử lý file ranh giới Phường Trúc Bạch:', error);
+    }
+}
 // Khởi tạo bản đồ
 const map = L.map("map").setView([21.0453, 105.8426], 16);
 L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
@@ -191,85 +247,96 @@ document.getElementById("togglePaths").addEventListener("click", () => {
   showEdges = !showEdges;
 });
 
-/*---------------------------------------------------------------------------------------------------------
-----------------------------------Xử lý sự kiện trên bàn đồ------------------------------------------------*/
+/*----------------------------------Xử lý sự kiện trên bàn đồ------------------------------------------------*/
+function isPointInPolygon(point, polygonVertices) {
+  if (!point || !polygonVertices || polygonVertices.length < 3) {
+      return false;
+  }
+
+  var x = point.lng; // Kinh độ của điểm
+  var y = point.lat; // Vĩ độ của điểm
+
+  var inside = false;
+  // lặp qua tất cả các cạnh của đa giác
+  // j là đỉnh trước, i là đỉnh hiện tại
+  for (var i = 0, j = polygonVertices.length - 1; i < polygonVertices.length; j = i++) {
+      var xi = polygonVertices[i].lng; // Kinh độ của đỉnh i
+      var yi = polygonVertices[i].lat; // Vĩ độ của đỉnh i
+      var xj = polygonVertices[j].lng; // Kinh độ của đỉnh j (đỉnh trước đó)
+      var yj = polygonVertices[j].lat; // Vĩ độ của đỉnh j (đỉnh trước đó)
+
+      var intersect = ((yi > y) !== (yj > y)) &&
+          (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+
+      if (intersect) {
+          inside = !inside;
+      }
+  }
+  return inside;
+}
 // Xử lý click trên bản đồ
 map.on("click", function (e) {
-  if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode) {
-    alert(
-      "Chế độ Admin đang hoạt động. \n Bạn đéo thể tìm đường (theo ý giang lê)"
-    );
-    return; // Nếu là Admin thì không cho tìm đường
+  const { lat, lng } = e.latlng;
+  const clickedLatLng = e.latlng;
+  if (!trucBachBoundaryLatLngs) {
+  } else {
+      let isInsideTrucBach;
+      try {
+          isInsideTrucBach = isPointInPolygon(clickedLatLng, trucBachBoundaryLatLngs);
+      } catch (error) {
+          console.error("Lỗi khi sử dụng L.PolyUtil.isPointInsidePolygon. Đảm bảo Leaflet đã tải đầy đủ.", error);
+          isInsideTrucBach = true; 
+      }
+
+      if (!isInsideTrucBach) {
+          map.closePopup(); 
+          L.popup({
+              className: 'warning-leaflet-popup synced-leaflet-popup compact-point-popup',
+              autoClose: true,
+              closeOnClick: true
+          })
+          .setLatLng(clickedLatLng)
+          .setContent("<b>Cảnh báo:</b> Vị trí bạn chọn nằm ngoài khu vực Phường Trúc Bạch. Vui lòng thao tác trong khu vực được hỗ trợ.")
+          .openOn(map);
+
+          setTimeout(() => {
+              const currentPopup = map._popup;
+              if (currentPopup && currentPopup.getContent().includes("nằm ngoài khu vực Phường Trúc Bạch")) {
+                  map.closePopup();
+              }
+          }, 4000); 
+
+          return;
+      }
   }
-  // Lấy tọa độ điẻm chấm trên bản đổ
-  const clickedLat = e.latlng.lat;
-  const clickedLon = e.latlng.lng;
-
-  // Chế độ cấm đường
-  if (isBlockMode) {
-    isDrawing = true;
-    startPoint = [clickedLat, clickedLon];
-    // Thêm điểm đầu và vẽ
-    points.push([clickedLat, clickedLon]);
-    L.circleMarker([clickedLat, clickedLon], {
-      radius: 5,
-      color: "#f44336",
-      fillColor: "#f44336",
-      fillOpacity: 1,
-    }).addTo(map); // Vẽ chấm đầu của cấm đường
-
-    if (banPolyline) {
-      map.removeLayer(banPolyline);
-    }
-
-    banPolyline = L.polyline(points, {
-      color: "#f44336",
-      weight: 3,
-      dashArray: "10,10",
-      opacity: 0.8,
-    }).addTo(map);
+  if (isAdmin && isOneWayEdgeMode) { // Ưu tiên chế độ này
+    handleOneWayEdgeModeClick(e); // Truyền cả event `e`
     return;
   }
 
-  // Chế độ đặt vật cản
+  // Nếu đang là Admin và không trong các chế độ vẽ
+  if (isAdmin && !isBlockMode && !isPlacingObstacle && !isTrafficMode && !isFloodMode) {
+      map.closePopup(); // Đóng các popup khác nếu có
+      L.popup({
+              className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+              autoClose: true,
+              closeOnClick: true
+          })
+          .setLatLng(e.latlng) // Hiển thị popup tại vị trí Admin vừa click
+          .setContent("<b>Thông báo:</b> Chế độ Admin đang hoạt động. Bạn không thể tìm đường ở chế độ này. Hãy sử dụng các chức năng quản lý hoặc chuyển về chế độ Guest để tìm đường.")
+          .openOn(map);
+      return;
+  }
+
+  // 1. Chế độ vẽ đường cấm hoặc tắc đường (đều sử dụng polyline)
+  if (isBlockMode || isTrafficMode || isFloodMode) {
+    handleDrawingMode(lat, lng, isTrafficMode, isFloodMode);
+    return;
+  }
+
+  // 2. Chế độ đặt vật cản
   if (isPlacingObstacle) {
-    const radius = document.getElementById("obstacleRadius").value;
-    const clickedPoint = [e.latlng.lat, e.latlng.lng];
-
-    // Vẽ vật cản
-    const obstacles = drawObstacle(clickedPoint, radius);
-
-    // Thêm vào danh sách quản lý
-    obstacleMarkers.push(obstacles);
-
-    // Xử lý các cạnh bị chặn
-    detectBlockedEdgesByObstacle(clickedPoint, radius);
-    return;
-  }
-
-  // Chế độ tắc đường
-  if (isTrafficMode) {
-    isDrawing = true;
-    startPoint = [clickedLat, clickedLon];
-    // Thêm điểm đầu và vẽ
-    points.push([clickedLat, clickedLon]);
-    L.circleMarker([clickedLat, clickedLon], {
-      radius: 5,
-      color: "#f44336",
-      fillColor: "#f44336",
-      fillOpacity: 1,
-    }).addTo(map); // Vẽ chấm đầu của cấm đường
-
-    if (trafficPolyline) {
-      map.removeLayer(trafficPolyline);
-    }
-
-    trafficPolyline = L.polyline(points, {
-      color: "#f44336",
-      weight: 3,
-      dashArray: "10,10",
-      opacity: 0.8,
-    }).addTo(map);
+    handleObstaclePlacement(lat, lng);
     return;
   }
 
@@ -520,7 +587,236 @@ document.addEventListener("keydown", function (e) {
       );
     }
   }
+  if (e.key === "Escape") {
+    if (isAdmin && isOneWayEdgeMode) {
+        isOneWayEdgeMode = false;
+        const btn = document.getElementById("toggleOneWayEdgeModeBtn");
+        if (btn) {
+            btn.textContent = "Đường 1 chiều";
+            btn.classList.remove("btn-danger");
+            btn.classList.add("btn-warning"); // Nhất quán với class mặc định của nút
+        }
+        map.getContainer().style.cursor = '';
+        map.closePopup(); // Đóng popup nếu đang mở
+        console.log("Đã thoát chế độ đặt đường một chiều.");
+        return;
+    }
+  }
 });
+
+// Hàm truyền đối số cho backend
+function displayPathfindingError(errorMessage) {
+    let popupLocation;
+    if (selectedPoints && selectedPoints.length === 2) {
+        const node1 = nodes.find(n => n.node_id === selectedPoints[0]);
+        const node2 = nodes.find(n => n.node_id === selectedPoints[1]);
+        if (node1 && node2) {
+            const lat1 = parseFloat(node1.lat);
+            const lon1 = parseFloat(node1.lon);
+            const lat2 = parseFloat(node2.lat);
+            const lon2 = parseFloat(node2.lon);
+            if (!isNaN(lat1) && !isNaN(lon1) && !isNaN(lat2) && !isNaN(lon2)) {
+                popupLocation = L.latLng((lat1 + lat2) / 2, (lon1 + lon2) / 2);
+            }
+        }
+    }
+    if (!popupLocation) {
+        popupLocation = map.getCenter();
+    }
+
+    L.popup({
+            className: 'error-leaflet-popup synced-leaflet-popup compact-point-popup',
+            autoClose: true,
+            closeOnClick: true
+        })
+        .setLatLng(popupLocation)
+        .setContent(`<b>Không tìm thấy đường đi</b>`)
+        .openOn(map);
+}
+
+function findAndDrawPath() {
+    fetch("http://127.0.0.1:5000/find_path", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            start: selectedPoints[0],
+            end: selectedPoints[1],
+            blocked_edges: blockedEdges,
+            algorithm: algorithm,
+            traffic_edges: trafficEdges,
+            traffic_level: trafficLevel,
+            flood_edges: floodEdges,
+            flood_level: floodLevel,
+            one_way_edges: oneWayEdges
+        }),
+    })
+    .then((res) => {
+        if (!res.ok) {
+            return res.json().then(errorData => {
+                let err = new Error(errorData.error || `Lỗi ${res.status}: Không thể xử lý yêu cầu.`);
+                err.data = errorData;
+                throw err;
+            });
+        }
+        return res.json();
+    })
+    .then((data) => {
+        if (data.path) {
+            console.log(
+                "Tìm thấy đường đi giữa 2 điểm " +
+                selectedPoints[0] +
+                " -> " +
+                selectedPoints[1] + (data.Cost ? ("\nChi phí đường đi: " + data.Cost) : "")
+            );
+            drawPath(data.path);
+        } else {
+            // Trường hợp server trả về 200 OK nhưng không có data.path (ít xảy ra nếu backend chuẩn)
+            displayPathfindingError(data.error || "Không tìm thấy đường đi.");
+        }
+    })
+    .catch((err) => {
+        console.error("Lỗi khi gọi API tìm đường:", err);
+        let errorMessage = "Không thể kết nối đến máy chủ hoặc có lỗi xảy ra.";
+        if (err && err.data && err.data.error) {
+            errorMessage = err.data.error;
+        } else if (err && err.message) {
+            // Kiểm tra xem có phải lỗi "Failed to fetch" không
+            if (err.message.toLowerCase().includes("failed to fetch")) {
+                errorMessage = "Không thể kết nối tới máy chủ (app.py chưa chạy hoặc có lỗi mạng).";
+            } else {
+                errorMessage = err.message;
+            }
+        }
+        displayPathfindingError(errorMessage);
+    });
+}
+// ----------------------------------- Xử lý thuật toán ------------------------------
+// Trong main.js (khoảng dòng 450 hoặc gần đó)
+
+algorithmSelect.addEventListener("change", function () {
+    algorithm = this.value;
+    if(selectedPoints.length === 2){
+      const mapCenter = map.getCenter();
+
+      L.popup({
+              className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup',
+              autoClose: true, 
+              closeOnClick: true,
+          })
+          .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+          .setContent(`Đã chọn thuật toán: <b>${algorithm}</b>.<br>Đang làm mới đường đi... 🤖`)
+          .openOn(map);
+
+      setTimeout(() => {
+          map.closePopup();
+      }, 3000); // Đóng sau 3 giây
+
+      getAlgorithm(); // Gọi hàm để làm mới đường đi
+    }
+});
+
+function getAlgorithm() {
+  map.eachLayer(function (layer) {
+    if (
+      layer instanceof L.Polyline && // Là Polyline
+      !(layer instanceof L.TileLayer) && // Không phải TileLayer
+      layer.options.color === "green" // Có màu xanh
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+  findAndDrawPath();
+}
+
+/*---------------------------------------------------- Xử lý ngập lụt ---------------------------*/
+document.getElementById("floodBtn").addEventListener("click", function () {
+  isFloodMode = true;
+  isDrawing = true;
+  points = [];
+  floodLevel = document.getElementById("floodLevel").value;
+  console.log("Mức độ ngập lụt:", floodLevel.value);
+  if (floodPolyline) {
+    map.removeLayer(floodPolyline);
+    floodPolyline = null;
+  }
+  map.closePopup(); // Đóng các popup khác nếu có
+  // Lấy vị trí trung tâm của bản đồ để hiển thị popup
+  const mapCenter = map.getCenter();
+  L.popup({
+          className: 'info-leaflet-popup synced-leaflet-popup compact-point-popup', // Sử dụng các class đã style
+          autoClose: true,
+          closeOnClick: true
+      })
+      .setLatLng(mapCenter) // Hiển thị popup ở giữa màn hình bản đồ
+      .setContent("<b>Hướng dẫn:</b> Click vào bản đồ để bắt đầu vẽ vùng ngập lụt.<br>Nhấn phím <b>ESC</b> để hoàn thành hoặc hủy vẽ.")
+      .openOn(map);
+
+  setTimeout(() => {
+      map.closePopup(); // Đóng popup cụ thể này hoặc tất cả
+  }, 5000); // Đóng sau 5 giây
+  console.log("Bật chế độ vẽ ngập lụt");
+});
+
+document.getElementById("restoreFloodBtn").addEventListener("click", function () {
+  if (floodLine.length === 0) {
+    console.warn("Không còn đường ngập lụt nào để khôi phục.");
+    return;
+  }
+  floodLine.pop();
+
+  map.eachLayer(function (layer) {
+    if (
+      (layer instanceof L.Polyline &&
+        (layer.options.color === "#64b5f6"||
+        layer.options.color === "#2196f3" ||
+        layer.options.color === "#0d47a1")
+      ) ||
+      layer instanceof L.CircleMarker
+    ) {
+      map.removeLayer(layer);
+    }
+  });
+
+  floodLine.forEach((linePoints) => {
+
+    L.polyline(linePoints, {
+      color: "#ffb300",
+      weight: 3,
+      dashArray: "10,10",
+      opacity: 0.8,
+    }).addTo(map);
+  });
+
+  // Cập nhật lại danh sách blockedEdges
+  floodEdges = [];
+  floodLine.forEach((linePoints) => {
+    for (let i = 0; i < linePoints.length - 1; i++) {
+      const p1 = linePoints[i];
+      const p2 = linePoints[i + 1];
+      if (p1 && p2) {
+        detectBlockedEdgesByCut([p1, p2]);
+      }
+    }
+  });
+
+  console.log("Đã khôi phục lại các đường tắc còn lại.");
+});
+
+function isEdgeFlood(edge) {
+  return floodEdges.some(
+    (blocked) =>
+      (blocked[0] === edge[0] && blocked[1] === edge[1]) ||
+      (blocked[0] === edge[1] && blocked[1] === edge[0])
+  );
+}
+
+function handleFloodEdge(edge) {
+  if (!isEdgeFlood(edge)) {
+    floodEdges.push(edge);
+    console.log(`💢 Cạnh xảy ra ngập lụt: ${edge[0]} - ${edge[1]}`);
+    console.log();
+  }
+}
 
 /*---------------------------------------------------- Xử lý tắc đường ---------------------------*/
 document.getElementById("trafficBtn").addEventListener("click", function () {
