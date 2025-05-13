@@ -131,11 +131,11 @@ def find_path():
 
         #------------------------------- Xử lý các cạnh tắc --------------------------------#
         if int(trafic_level) == 1:
-            k = 1.2
+            k = 1.75
         elif int(trafic_level) == 2:
-            k = 1.5
+            k = 2.25
         elif int(trafic_level) == 3:
-            k = 2
+            k = 2.75
         for edge in trafic_edges:
             if len(edge) != 2:
                 continue
@@ -152,9 +152,9 @@ def find_path():
         #------------------------------- Xử lý các cạnh ngập --------------------------------#
         flood_level = int(flood_level)
         if flood_level == 1:
-            f = 1.5
+            f = 2.25
         elif flood_level == 2:
-            f = 2
+            f = 2.75
         elif flood_level == 3:
             f = 99999999
         for edge in flood_edges:

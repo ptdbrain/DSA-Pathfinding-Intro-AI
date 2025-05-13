@@ -124,4 +124,8 @@ For any questions, feel free to reach out to the project team members:
   - Lê Trường Giang
   - Phạm Ngọc Tuyên
 
+<<<<<<< HEAD
 If you'd like to report bugs, suggest features, or contribute, please open an issue on the [Project_AI_20242](https://github.com/BienKieu1411/Project_AI_20242).
+=======
+If you'd like to report bugs, suggest features, or contribute, please open an issue on the [Project_AI_20242](https://github.com/BienKieu1411/Project_AI_20242).
+>>>>>>> cffef43263d8d4721d0f83b75ad65cfb5f88b44c
