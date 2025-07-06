@@ -114,7 +114,7 @@ def main():
     # G = ox.graph_from_place("Truc Bach, Ba Dinh, Ha Noi", network_type="all", simplify=False, retain_all=True, truncate_by_edge=False)
     
     # Lấy đồ thị có hướng từ OSM
-    G = ox.graph_from_place("Truc Bach, Ba Dinh, Ha Noi", network_type="all", simplify=False, retain_all=True, truncate_by_edge=False)
+    G = ox.graph_from_point("Truc Bach, Ba Dinh, Ha Noi", network_type="all", simplify=False, retain_all=True, truncate_by_edge=False)
 
     # Chuyển đồ thị thành đồ thị có hướng
     # G = ox.utils_graph.get_directions(G)

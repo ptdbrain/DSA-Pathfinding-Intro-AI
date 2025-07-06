@@ -5,7 +5,7 @@ from flask_cors import CORS
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Set 
 import ast # Sử dụng ast.literal_eval thay cho eval
-#Phan Trọng Đạt
+
 # Import các thuật toán của bạn
 from algorithm.a_star import astar
 from algorithm.dijkstra import dijkstra
